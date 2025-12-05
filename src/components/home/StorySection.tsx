@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/contexts/LanguageContext";
+import waiterImage from "@/assets/gallery/waiter-serving.jpg";
 
 const StorySection = () => {
   const { t } = useLanguage();
@@ -17,8 +18,8 @@ const StorySection = () => {
           <div className="relative">
             <div className="relative z-10">
               <img
-                src="https://images.unsplash.com/photo-1544148103-0773bf10d330?w=800"
-                alt="Chef preparing food"
+                src={waiterImage}
+                alt="Califorian service"
                 className="rounded-2xl shadow-2xl w-full h-[500px] object-cover"
               />
             </div>
@@ -42,20 +43,20 @@ const StorySection = () => {
             </p>
             <h2 className="font-serif text-4xl md:text-5xl font-bold text-foreground leading-tight">
               {t(
-                "A Legacy of Flavor & Tradition",
-                "Lezzet ve Geleneğin Mirası"
+                "A Journey from Mehmet Akif Street to the Future",
+                "Mehmet Akif Caddesi'nden Geleceğe"
               )}
             </h2>
             <p className="text-muted-foreground text-lg leading-relaxed">
               {t(
-                "Since 2001, Califorian Restaurant has been a cornerstone of culinary excellence in Cyprus. What started as a small family-owned establishment has grown into three beloved locations, each maintaining the warmth and quality that defined our humble beginnings.",
-                "2001'den bu yana Califorian Restaurant, Kıbrıs'ta mutfak mükemmelliğinin temel taşı olmuştur. Küçük bir aile işletmesi olarak başlayan serüvenimiz, her biri mütevazı başlangıcımızı tanımlayan sıcaklık ve kaliteyi koruyan üç sevilen şubeye dönüşmüştür."
+                "We started serving 23 years ago on Mehmet Akif Street, one of the most popular areas of Lefkoşa. During this time, we have continuously expanded our customer portfolio with our quality service and reliable products.",
+                "Lefkoşa'nın gözde bölgelerinden biri olan Mehmet Akif Caddesi'nde, tam 23 yıl önce hizmet vermeye başladık. Bu süre zarfında, kaliteli hizmet anlayışımız ve güvenilir ürünlerimizle müşteri portföyümüzü sürekli olarak genişlettik."
               )}
             </p>
             <p className="text-muted-foreground leading-relaxed">
               {t(
-                "Our chefs blend Mediterranean traditions with modern techniques, sourcing the finest local ingredients to create dishes that are both familiar and extraordinary.",
-                "Şeflerimiz, hem tanıdık hem de sıra dışı yemekler yaratmak için en kaliteli yerel malzemeleri kullanarak Akdeniz geleneklerini modern tekniklerle harmanlıyor."
+                "With our vision of being the address of quality and trust, we opened our Gazimağusa and Esentepe branches over the years. Through our catering services, we are now reaching thousands of people daily.",
+                "Kalite ve güvenin adresi olma vizyonumuzla devam ettiğimiz yıllar içerisinde Gazimağusa ve Esentepe şubelerini açtık. Catering hizmetleriyle binlerce kişiye günlük yemek sunarak daha geniş bir kitleye ulaşıyoruz."
               )}
             </p>
 
@@ -65,8 +66,8 @@ const StorySection = () => {
                 <p className="text-muted-foreground text-sm">{t("Locations", "Şube")}</p>
               </div>
               <div>
-                <p className="font-serif text-3xl font-bold text-foreground">50+</p>
-                <p className="text-muted-foreground text-sm">{t("Menu Items", "Menü Çeşidi")}</p>
+                <p className="font-serif text-3xl font-bold text-foreground">1000+</p>
+                <p className="text-muted-foreground text-sm">{t("Daily Catering", "Günlük Catering")}</p>
               </div>
               <div>
                 <p className="font-serif text-3xl font-bold text-foreground">100K+</p>

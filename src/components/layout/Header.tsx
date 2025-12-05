@@ -4,7 +4,7 @@ import { Menu, X } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { NAV_LINKS } from "@/lib/constants";
-import logo from "@/assets/logo.png";
+import logoDark from "@/assets/logo-dark.png";
 
 const Header = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -22,13 +22,10 @@ const Header = () => {
           {/* Logo */}
           <Link to="/" className="flex items-center gap-3 group">
             <img
-              src={logo}
+              src={logoDark}
               alt="Califorian Restaurant"
               className="h-14 w-auto transition-transform duration-300 group-hover:scale-105"
             />
-            <span className="hidden md:block font-serif text-xl font-semibold text-foreground">
-              Califorian
-            </span>
           </Link>
 
           {/* Desktop Navigation */}

@@ -2,7 +2,8 @@ import { Link } from "react-router-dom";
 import { Calendar, Phone } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { BRANCHES } from "@/lib/constants";
+import { RESTAURANT_PHONE } from "@/lib/constants";
+import tableSettingImage from "@/assets/gallery/table-setting.jpg";
 
 const CTASection = () => {
   const { t } = useLanguage();
@@ -12,7 +13,7 @@ const CTASection = () => {
       {/* Background */}
       <div className="absolute inset-0">
         <img
-          src="https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=1920&q=80"
+          src={tableSettingImage}
           alt="Dining experience"
           className="w-full h-full object-cover"
         />
@@ -26,10 +27,16 @@ const CTASection = () => {
             <br />
             <span className="text-primary">{t("Unforgettable Experience?", "Deneyime Hazır mısınız?")}</span>
           </h2>
-          <p className="text-cream/80 text-lg mb-10 max-w-xl mx-auto">
+          <p className="text-cream/80 text-lg mb-4">
             {t(
-              "Join us for a culinary journey that will delight your senses. Reserve your table today.",
-              "Duyularınızı büyüleyecek bir mutfak yolculuğuna katılın. Masanızı bugün ayırtın."
+              "We would be delighted to host you at Califorian, where taste, sincerity and pleasure meet.",
+              "Sizleri lezzetin, samimiyetin ve keyfin buluştuğu Califorian'da ağırlamaktan mutluluk duyacağız."
+            )}
+          </p>
+          <p className="text-cream/70 text-base mb-10">
+            {t(
+              "Reserve your place now for unforgettable moments!",
+              "Unutulmaz anlar için yerinizi şimdiden ayırtın!"
             )}
           </p>
 
@@ -43,14 +50,14 @@ const CTASection = () => {
                 {t("Make a Reservation", "Rezervasyon Yap")}
               </Button>
             </Link>
-            <a href={`tel:${BRANCHES[0].phone}`}>
+            <a href={`tel:${RESTAURANT_PHONE}`}>
               <Button
                 size="lg"
                 variant="outline"
                 className="border-cream/30 text-cream hover:bg-cream/10 font-semibold px-8 py-6 text-lg w-full sm:w-auto"
               >
                 <Phone className="mr-2" size={20} />
-                {t("Call Us", "Bizi Arayın")}
+                392 444 7070
               </Button>
             </a>
           </div>

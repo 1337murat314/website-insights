@@ -1,27 +1,40 @@
 import { useState } from "react";
 import Layout from "@/components/layout/Layout";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { GALLERY_IMAGES } from "@/lib/constants";
 import { X } from "lucide-react";
+import pannaCotta from "@/assets/gallery/panna-cotta.jpg";
+import exteriorDomes from "@/assets/gallery/exterior-domes.jpg";
+import cocktail from "@/assets/gallery/cocktail.jpg";
+import waiterServing from "@/assets/gallery/waiter-serving.jpg";
+import exteriorEvening from "@/assets/gallery/exterior-evening.jpg";
+import tableSetting from "@/assets/gallery/table-setting.jpg";
+import exteriorMain from "@/assets/gallery/exterior-main.jpg";
 
 const Gallery = () => {
-  const { t } = useLanguage();
+  const { t, language } = useLanguage();
   const [activeFilter, setActiveFilter] = useState("all");
-  const [selectedImage, setSelectedImage] = useState<typeof GALLERY_IMAGES[0] | null>(null);
+  const [selectedImage, setSelectedImage] = useState<{ src: string; alt: string } | null>(null);
+
+  const GALLERY_IMAGES = [
+    { id: 1, src: exteriorDomes, alt: "Restaurant exterior with glass domes", altTr: "Cam kubbeli dış mekan", category: "interior" },
+    { id: 2, src: pannaCotta, alt: "Panna Cotta dessert", altTr: "Panna Cotta tatlısı", category: "food" },
+    { id: 3, src: cocktail, alt: "Signature cocktail", altTr: "İmza kokteyli", category: "food" },
+    { id: 4, src: waiterServing, alt: "Waiter serving fresh dishes", altTr: "Garson taze yemekler servis ediyor", category: "interior" },
+    { id: 5, src: exteriorEvening, alt: "Evening ambiance at Califorian", altTr: "Califorian akşam atmosferi", category: "interior" },
+    { id: 6, src: tableSetting, alt: "Elegant table setting for events", altTr: "Etkinlikler için zarif masa düzeni", category: "events" },
+    { id: 7, src: exteriorMain, alt: "Califorian Restaurants main building", altTr: "Califorian Restaurants ana bina", category: "interior" },
+  ];
 
   const filters = [
     { id: "all", labelEn: "All", labelTr: "Tümü" },
-    { id: "interior", labelEn: "Interior", labelTr: "İç Mekan" },
-    { id: "food", labelEn: "Food", labelTr: "Yemekler" },
+    { id: "interior", labelEn: "Interior & Exterior", labelTr: "İç & Dış Mekan" },
+    { id: "food", labelEn: "Food & Drinks", labelTr: "Yemek & İçecek" },
     { id: "events", labelEn: "Events", labelTr: "Etkinlikler" },
-    { id: "team", labelEn: "Team", labelTr: "Ekip" },
   ];
 
   const filteredImages = GALLERY_IMAGES.filter(
     (img) => activeFilter === "all" || img.category === activeFilter
   );
-
-  const { language } = useLanguage();
 
   return (
     <Layout>
@@ -29,7 +42,7 @@ const Gallery = () => {
       <section className="relative py-32 bg-charcoal">
         <div className="absolute inset-0 opacity-30">
           <img
-            src="https://images.unsplash.com/photo-1559339352-11d035aa65de?w=1920"
+            src={exteriorEvening}
             alt="Gallery background"
             className="w-full h-full object-cover"
           />
@@ -73,17 +86,17 @@ const Gallery = () => {
               <div
                 key={image.id}
                 className="break-inside-avoid group cursor-pointer"
-                onClick={() => setSelectedImage(image)}
+                onClick={() => setSelectedImage({ src: image.src, alt: language === "en" ? image.alt : image.altTr })}
                 style={{ animationDelay: `${index * 0.05}s` }}
               >
                 <div className="relative overflow-hidden rounded-xl">
                   <img
                     src={image.src}
-                    alt={image.alt}
+                    alt={language === "en" ? image.alt : image.altTr}
                     className="w-full object-cover transition-transform duration-700 group-hover:scale-110"
                   />
                   <div className="absolute inset-0 bg-gradient-to-t from-charcoal/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-end p-4">
-                    <p className="text-cream font-medium">{image.alt}</p>
+                    <p className="text-cream font-medium">{language === "en" ? image.alt : image.altTr}</p>
                   </div>
                 </div>
               </div>

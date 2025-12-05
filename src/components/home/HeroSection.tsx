@@ -2,6 +2,7 @@ import { Link } from "react-router-dom";
 import { ArrowDown } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/contexts/LanguageContext";
+import heroImage from "@/assets/gallery/exterior-domes.jpg";
 
 const HeroSection = () => {
   const { t } = useLanguage();
@@ -11,11 +12,11 @@ const HeroSection = () => {
       {/* Background Image */}
       <div className="absolute inset-0">
         <img
-          src="https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=1920&q=80"
-          alt="Restaurant ambiance"
+          src={heroImage}
+          alt="Califorian Restaurant"
           className="w-full h-full object-cover"
         />
-        <div className="absolute inset-0 bg-gradient-to-b from-charcoal/70 via-charcoal/50 to-charcoal/80" />
+        <div className="absolute inset-0 bg-gradient-to-b from-charcoal/60 via-charcoal/40 to-charcoal/70" />
       </div>
 
       {/* Content */}
@@ -28,16 +29,16 @@ const HeroSection = () => {
 
           {/* Main Heading */}
           <h1 className="font-serif text-5xl md:text-7xl lg:text-8xl font-bold leading-tight animate-fade-up opacity-0 stagger-2">
-            {t("Experience", "Deneyimleyin")}
+            {t("Experience", "Lezzetin")}
             <br />
-            <span className="text-primary">{t("Culinary Art", "Mutfak Sanatını")}</span>
+            <span className="text-primary">{t("Culinary Art", "Zirvesinde")}</span>
           </h1>
 
           {/* Subtitle */}
           <p className="text-lg md:text-xl text-cream/80 max-w-2xl mx-auto animate-fade-up opacity-0 stagger-3">
             {t(
-              "Where Mediterranean flavors meet modern elegance. Every dish tells a story of passion, tradition, and excellence.",
-              "Akdeniz lezzetlerinin modern zarafetle buluştuğu yer. Her tabak tutku, gelenek ve mükemmelliğin hikayesini anlatır."
+              "Where quality and trust meet unforgettable flavors. We serve healthy and delicious food with passion.",
+              "Kalite ve güvenin unutulmaz lezzetlerle buluştuğu yer. Sağlıklı ve lezzetli yemekleri tutkuyla sunuyoruz."
             )}
           </p>
 

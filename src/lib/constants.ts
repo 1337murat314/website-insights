@@ -1,47 +1,52 @@
 // Restaurant Information
 export const RESTAURANT_NAME = "Califorian Restaurant";
-export const RESTAURANT_TAGLINE = "23 Years of Culinary Excellence";
-export const RESTAURANT_DESCRIPTION = "Experience the perfect blend of Mediterranean flavors and modern cuisine in an unforgettable atmosphere.";
+export const RESTAURANT_TAGLINE = "Lezzetin Zirvesinde Bir Deneyim";
+export const RESTAURANT_DESCRIPTION = "23 yıldır kalite ve güvenin adresi. Sağlıklı ve lezzetli yemekler ile müşterilerimizin damak zevkine en üst düzeyde hizmet sunuyoruz.";
+export const RESTAURANT_PHONE = "+90 392 444 7070";
 
 // Branches
 export const BRANCHES = [
   {
     id: "lefkosa",
     name: "Lefkoşa",
-    address: "Dereboyu Caddesi No: 45, Lefkoşa",
-    phone: "+90 392 123 4567",
-    hours: "11:00 - 23:00",
-    mapUrl: "https://maps.google.com/?q=Lefkosa",
-    image: "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800",
+    nameTr: "Lefkoşa",
+    address: "Mehmet Akif Caddesi, Lefkoşa",
+    addressTr: "Mehmet Akif Caddesi, Lefkoşa",
+    phone: "+90 392 444 7070",
+    hours: "09:00 - 00:00",
+    mapUrl: "https://maps.google.com/?q=Califorian+Lefkosa",
   },
   {
     id: "gazimagusa",
     name: "Gazimağusa",
-    address: "Salamis Yolu No: 78, Gazimağusa",
-    phone: "+90 392 234 5678",
-    hours: "11:00 - 23:00",
-    mapUrl: "https://maps.google.com/?q=Gazimagusa",
-    image: "https://images.unsplash.com/photo-1552566626-52f8b828add9?w=800",
+    nameTr: "Gazimağusa",
+    address: "Gazimağusa",
+    addressTr: "Gazimağusa",
+    phone: "+90 392 444 7070",
+    hours: "09:00 - 00:00",
+    mapUrl: "https://maps.google.com/?q=Califorian+Gazimagusa",
   },
   {
     id: "esentepe",
     name: "Esentepe",
-    address: "Sahil Yolu No: 12, Esentepe",
-    phone: "+90 392 345 6789",
-    hours: "10:00 - 00:00",
-    mapUrl: "https://maps.google.com/?q=Esentepe",
-    image: "https://images.unsplash.com/photo-1559339352-11d035aa65de?w=800",
+    nameTr: "Esentepe",
+    address: "Esentepe",
+    addressTr: "Esentepe",
+    phone: "+90 392 444 7070",
+    hours: "09:00 - 00:00",
+    mapUrl: "https://maps.google.com/?q=Califorian+Esentepe",
   },
 ];
 
 // Menu Categories
 export const MENU_CATEGORIES = [
   { id: "all", name: "All", nameEn: "All", nameTr: "Tümü" },
-  { id: "starters", name: "Starters", nameEn: "Starters", nameTr: "Başlangıçlar" },
   { id: "pizzas", name: "Pizzas", nameEn: "Pizzas", nameTr: "Pizzalar" },
+  { id: "starters", name: "Starters", nameEn: "Starters", nameTr: "Başlangıçlar" },
   { id: "mains", name: "Main Courses", nameEn: "Main Courses", nameTr: "Ana Yemekler" },
   { id: "desserts", name: "Desserts", nameEn: "Desserts", nameTr: "Tatlılar" },
-  { id: "beverages", name: "Beverages", nameEn: "Beverages", nameTr: "İçecekler" },
+  { id: "beverages", name: "Beverages", nameEn: "Beverages", nameTr: "Meşrubatlar" },
+  { id: "breakfast", name: "Breakfast", nameEn: "Breakfast", nameTr: "Kahvaltı" },
 ];
 
 // Sample Menu Items
@@ -178,22 +183,17 @@ export const MENU_ITEMS = [
     image: "https://images.unsplash.com/photo-1510812431401-41d2bd2722f3?w=600",
     tags: ["vegan"],
   },
-];
-
-// Gallery Images
-export const GALLERY_IMAGES = [
-  { id: 1, src: "https://images.unsplash.com/photo-1517248135467-4c7edcad34c4?w=800", alt: "Restaurant interior", category: "interior" },
-  { id: 2, src: "https://images.unsplash.com/photo-1414235077428-338989a2e8c0?w=800", alt: "Gourmet dish", category: "food" },
-  { id: 3, src: "https://images.unsplash.com/photo-1559339352-11d035aa65de?w=800", alt: "Outdoor seating", category: "interior" },
-  { id: 4, src: "https://images.unsplash.com/photo-1504674900247-0877df9cc836?w=800", alt: "Signature pasta", category: "food" },
-  { id: 5, src: "https://images.unsplash.com/photo-1565299624946-b28f40a0ae38?w=800", alt: "Wood-fired pizza", category: "food" },
-  { id: 6, src: "https://images.unsplash.com/photo-1550966871-3ed3cdb5ed0c?w=800", alt: "Bar area", category: "interior" },
-  { id: 7, src: "https://images.unsplash.com/photo-1551218808-94e220e084d2?w=800", alt: "Private event", category: "events" },
-  { id: 8, src: "https://images.unsplash.com/photo-1544148103-0773bf10d330?w=800", alt: "Chef preparing", category: "team" },
-  { id: 9, src: "https://images.unsplash.com/photo-1600891964092-4316c288032e?w=800", alt: "Steak dish", category: "food" },
-  { id: 10, src: "https://images.unsplash.com/photo-1466978913421-dad2ebd01d17?w=800", alt: "Celebration dinner", category: "events" },
-  { id: 11, src: "https://images.unsplash.com/photo-1559329007-40df8a9345d8?w=800", alt: "Dining room", category: "interior" },
-  { id: 12, src: "https://images.unsplash.com/photo-1571877227200-a0d98ea607e9?w=800", alt: "Dessert selection", category: "food" },
+  {
+    id: 13,
+    name: "Serpme Kahvaltı",
+    nameTr: "Serpme Kahvaltı",
+    description: "Traditional Turkish breakfast spread with cheeses, eggs, and more",
+    descriptionTr: "Geleneksel Türk kahvaltısı, peynirler, yumurtalar ve daha fazlası",
+    price: 250,
+    category: "breakfast",
+    image: "https://images.unsplash.com/photo-1533089860892-a7c6f0a88666?w=600",
+    tags: ["vegetarian"],
+  },
 ];
 
 // Navigation Links
@@ -228,5 +228,93 @@ export const TESTIMONIALS = [
     text: "A hidden gem! The pizzas are authentic and the staff makes you feel like family.",
     textTr: "Gizli bir hazine! Pizzalar otantik ve personel sizi aile gibi hissettiriyor.",
     rating: 5,
+  },
+];
+
+// Features
+export const FEATURES = [
+  {
+    id: 1,
+    titleEn: "Experienced & Friendly Staff",
+    titleTr: "Deneyimli ve Güler Yüzlü Personel",
+    descEn: "Our experienced and friendly team attentively responds to our guests' needs.",
+    descTr: "Misafirlerimizin ihtiyaçlarına özenle yanıt veren deneyimli ve güler yüzlü bir ekiple hizmet veriyoruz.",
+  },
+  {
+    id: 2,
+    titleEn: "Organic & Local Ingredients",
+    titleTr: "Organik ve Yerel Malzemeler",
+    descEn: "We use the freshest and highest quality organic and local ingredients.",
+    descTr: "En taze ve kaliteli organik ve yerel malzemeleri kullanarak lezzetlerimize özel bir tat katıyoruz.",
+  },
+  {
+    id: 3,
+    titleEn: "Breakfast Menu",
+    titleTr: "Kahvaltı Menüsü",
+    descEn: "Start your day with our rich breakfast options.",
+    descTr: "Zengin kahvaltı seçenekleri ile güne enfes bir başlangıç yapmanızı sağlıyoruz.",
+  },
+  {
+    id: 4,
+    titleEn: "Special Events",
+    titleTr: "Özel Organizasyonlar",
+    descEn: "We offer spaces and services for special events and private occasions.",
+    descTr: "Özel etkinlikler ve özel organizasyonlar için alanlar ve hizmetler sunuyoruz.",
+  },
+  {
+    id: 5,
+    titleEn: "Free WiFi",
+    titleTr: "Ücretsiz WiFi",
+    descEn: "We offer free WiFi access to make your visits more comfortable.",
+    descTr: "Misafirlerimize ücretsiz Wi-Fi erişimi sunarak ziyaretlerinizi kolaylaştırıyoruz.",
+  },
+  {
+    id: 6,
+    titleEn: "Free Parking",
+    titleTr: "Ücretsiz Otopark",
+    descEn: "We provide free parking for our guests.",
+    descTr: "Misafirlerimiz için ücretsiz otopark hizmeti sunuyoruz.",
+  },
+  {
+    id: 7,
+    titleEn: "Kid Friendly",
+    titleTr: "Çocuk Dostu",
+    descEn: "Family-friendly environment with kids menus and play areas.",
+    descTr: "Aileler için çocuk menüleri ve oyun alanları ile aile dostu bir ortam sunuyoruz.",
+  },
+  {
+    id: 8,
+    titleEn: "VIP Rooms",
+    titleTr: "Özel VIP Odalar",
+    descEn: "Private VIP rooms ideal for special events and meetings.",
+    descTr: "Özel VIP odalarımızda özel davetler ve özel toplantılar için ideal bir ortam sağlıyoruz.",
+  },
+  {
+    id: 9,
+    titleEn: "Outdoor Dining",
+    titleTr: "Açık Hava Alanları",
+    descEn: "Enjoy dining in our beautiful outdoor spaces.",
+    descTr: "Açık havada yemek yeme imkanları sunan mekanlarımız bulunuyor.",
+  },
+  {
+    id: 10,
+    titleEn: "Bar Service",
+    titleTr: "Bar Hizmeti",
+    descEn: "Cocktails prepared by professional bartenders and a wide selection of drinks.",
+    descTr: "Profesyonel barmenlerimiz tarafından hazırlanan kokteyller ve geniş içki seçenekleri.",
+  },
+  {
+    id: 11,
+    titleEn: "Catering Services",
+    titleTr: "Catering Hizmetleri",
+    descEn: "We provide daily meals to thousands through our catering services.",
+    descTr: "Catering hizmetleriyle binlerce kişiye günlük yemek sunuyoruz.",
+  },
+  {
+    id: 12,
+    titleEn: "Special Diet Options",
+    titleTr: "Özel Menü Seçenekleri",
+    descEn: "Vegan, vegetarian, gluten-free and more dietary options available.",
+    descTr: "Vegan, vejetaryen, glütensiz ve daha fazlası gibi özel diyet ihtiyaçlarına uygun menü seçenekleri.",
   },
 ];

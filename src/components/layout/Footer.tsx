@@ -1,8 +1,8 @@
 import { Link } from "react-router-dom";
 import { MapPin, Phone, Mail, Instagram, Facebook } from "lucide-react";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { BRANCHES, NAV_LINKS } from "@/lib/constants";
-import logo from "@/assets/logo.png";
+import { BRANCHES, NAV_LINKS, RESTAURANT_PHONE } from "@/lib/constants";
+import logoDark from "@/assets/logo-dark.png";
 
 const Footer = () => {
   const { language, t } = useLanguage();
@@ -14,17 +14,17 @@ const Footer = () => {
           {/* Brand */}
           <div className="space-y-4">
             <Link to="/" className="flex items-center gap-3">
-              <img src={logo} alt="Califorian Restaurant" className="h-16 w-auto" />
+              <img src={logoDark} alt="Califorian Restaurant" className="h-16 w-auto brightness-0 invert" />
             </Link>
             <p className="text-cream/70 text-sm leading-relaxed">
               {t(
-                "23 years of culinary excellence, bringing Mediterranean flavors to your table with passion and dedication.",
-                "23 yıllık mutfak mükemmelliği, Akdeniz lezzetlerini tutku ve özveri ile sofranıza taşıyoruz."
+                "23 years as the address of quality and trust. Serving healthy and delicious food with passion and dedication.",
+                "23 yıldır kalite ve güvenin adresi. Sağlıklı ve lezzetli yemekler ile tutku ve özveri ile hizmet veriyoruz."
               )}
             </p>
             <div className="flex gap-4 pt-2">
               <a
-                href="https://instagram.com"
+                href="https://instagram.com/califorianrestaurant"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-cream/70 hover:text-primary transition-colors"
@@ -32,7 +32,7 @@ const Footer = () => {
                 <Instagram size={20} />
               </a>
               <a
-                href="https://facebook.com"
+                href="https://facebook.com/califorianrestaurant"
                 target="_blank"
                 rel="noopener noreferrer"
                 className="text-cream/70 hover:text-primary transition-colors"
@@ -69,11 +69,13 @@ const Footer = () => {
             <ul className="space-y-3">
               <li className="flex items-start gap-3 text-sm text-cream/70">
                 <Phone size={16} className="mt-0.5 text-primary" />
-                <span>{BRANCHES[0].phone}</span>
+                <a href={`tel:${RESTAURANT_PHONE}`} className="hover:text-primary transition-colors">
+                  392 444 7070
+                </a>
               </li>
               <li className="flex items-start gap-3 text-sm text-cream/70">
                 <Mail size={16} className="mt-0.5 text-primary" />
-                <span>info@califorian.com</span>
+                <span>info@califorianrestaurant.com</span>
               </li>
             </ul>
           </div>

@@ -2,11 +2,24 @@ import { Link } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { GALLERY_IMAGES } from "@/lib/constants";
+import pannaCotta from "@/assets/gallery/panna-cotta.jpg";
+import exteriorDomes from "@/assets/gallery/exterior-domes.jpg";
+import cocktail from "@/assets/gallery/cocktail.jpg";
+import waiterServing from "@/assets/gallery/waiter-serving.jpg";
+import exteriorEvening from "@/assets/gallery/exterior-evening.jpg";
+import tableSetting from "@/assets/gallery/table-setting.jpg";
 
 const GalleryPreview = () => {
   const { t } = useLanguage();
-  const previewImages = GALLERY_IMAGES.slice(0, 6);
+  
+  const previewImages = [
+    { id: 1, src: exteriorDomes, alt: "Califorian exterior with glass domes" },
+    { id: 2, src: pannaCotta, alt: "Panna Cotta dessert" },
+    { id: 3, src: cocktail, alt: "Signature cocktail" },
+    { id: 4, src: waiterServing, alt: "Waiter serving food" },
+    { id: 5, src: exteriorEvening, alt: "Evening ambiance" },
+    { id: 6, src: tableSetting, alt: "Elegant table setting" },
+  ];
 
   return (
     <section className="section-padding bg-secondary">
