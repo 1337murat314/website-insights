@@ -3,6 +3,15 @@ import { useLanguage } from "@/contexts/LanguageContext";
 import { BRANCHES } from "@/lib/constants";
 import { MapPin, Phone, Clock, ExternalLink } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import exteriorDomes from "@/assets/gallery/exterior-domes.jpg";
+import exteriorEvening from "@/assets/gallery/exterior-evening.jpg";
+import exteriorMain from "@/assets/gallery/exterior-main.jpg";
+
+const branchImages: Record<string, string> = {
+  lefkosa: exteriorDomes,
+  gazimagusa: exteriorMain,
+  esentepe: exteriorEvening,
+};
 
 const Locations = () => {
   const { t } = useLanguage();
@@ -13,7 +22,7 @@ const Locations = () => {
       <section className="relative py-32 bg-charcoal">
         <div className="absolute inset-0 opacity-30">
           <img
-            src="https://images.unsplash.com/photo-1552566626-52f8b828add9?w=1920"
+            src={exteriorMain}
             alt="Locations background"
             className="w-full h-full object-cover"
           />
@@ -41,7 +50,7 @@ const Locations = () => {
                 {/* Image */}
                 <div className="relative h-64 overflow-hidden">
                   <img
-                    src={branch.image}
+                    src={branchImages[branch.id]}
                     alt={branch.name}
                     className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                   />
@@ -64,7 +73,7 @@ const Locations = () => {
                       href={`tel:${branch.phone}`}
                       className="text-foreground hover:text-primary transition-colors"
                     >
-                      {branch.phone}
+                      392 444 7070
                     </a>
                   </div>
 
@@ -104,12 +113,13 @@ const Locations = () => {
           <h2 className="font-serif text-3xl font-bold text-foreground mb-4">
             {t("Visit Any of Our Locations", "Şubelerimizden Birini Ziyaret Edin")}
           </h2>
-          <p className="text-muted-foreground max-w-xl mx-auto">
+          <p className="text-muted-foreground max-w-xl mx-auto mb-2">
             {t(
               "Each of our three locations offers the same exceptional dining experience with unique local character.",
               "Üç şubemizin her biri, benzersiz yerel karakteriyle aynı olağanüstü yemek deneyimini sunuyor."
             )}
           </p>
+          <p className="text-2xl font-bold text-primary">392 444 7070</p>
         </div>
       </section>
     </Layout>
