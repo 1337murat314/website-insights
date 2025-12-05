@@ -24,6 +24,7 @@ import {
   Crown,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useLanguage } from "@/contexts/LanguageContext";
 
 interface SearchResult {
   id: string;
@@ -37,6 +38,7 @@ const GlobalSearch = () => {
   const [searchResults, setSearchResults] = useState<SearchResult[]>([]);
   const [query, setQuery] = useState("");
   const navigate = useNavigate();
+  const { t } = useLanguage();
 
   useEffect(() => {
     const down = (e: KeyboardEvent) => {
@@ -116,17 +118,17 @@ const GlobalSearch = () => {
   }, [query, searchData]);
 
   const navigationItems = [
-    { path: "/admin", label: "Dashboard", icon: LayoutDashboard },
-    { path: "/admin/reservations", label: "Reservations", icon: CalendarDays },
-    { path: "/admin/menu", label: "Menu Management", icon: UtensilsCrossed },
-    { path: "/admin/tables", label: "Tables", icon: TableProperties },
-    { path: "/admin/guests", label: "Guest CRM", icon: Crown },
-    { path: "/admin/staff", label: "Staff", icon: Users },
-    { path: "/admin/analytics", label: "Analytics", icon: BarChart3 },
-    { path: "/admin/promo-codes", label: "Promo Codes", icon: Gift },
-    { path: "/admin/events", label: "Special Events", icon: PartyPopper },
-    { path: "/admin/audit-logs", label: "Audit Logs", icon: ScrollText },
-    { path: "/admin/settings", label: "Settings", icon: Settings },
+    { path: "/admin", label: t("Dashboard", "Kontrol Paneli"), icon: LayoutDashboard },
+    { path: "/admin/reservations", label: t("Reservations", "Rezervasyonlar"), icon: CalendarDays },
+    { path: "/admin/menu", label: t("Menu Management", "Menü Yönetimi"), icon: UtensilsCrossed },
+    { path: "/admin/tables", label: t("Tables", "Masalar"), icon: TableProperties },
+    { path: "/admin/guests", label: t("Guest CRM", "Misafir CRM"), icon: Crown },
+    { path: "/admin/staff", label: t("Staff", "Personel"), icon: Users },
+    { path: "/admin/analytics", label: t("Analytics", "Analitik"), icon: BarChart3 },
+    { path: "/admin/promo-codes", label: t("Promo Codes", "Promosyon Kodları"), icon: Gift },
+    { path: "/admin/events", label: t("Special Events", "Özel Etkinlikler"), icon: PartyPopper },
+    { path: "/admin/audit-logs", label: t("Audit Logs", "Denetim Kayıtları"), icon: ScrollText },
+    { path: "/admin/settings", label: t("Settings", "Ayarlar"), icon: Settings },
   ];
 
   const handleSelect = (result: SearchResult) => {
@@ -153,7 +155,7 @@ const GlobalSearch = () => {
         className="flex items-center gap-2 px-3 py-2 text-sm text-muted-foreground bg-secondary/50 hover:bg-secondary rounded-lg transition-colors"
       >
         <Search className="h-4 w-4" />
-        <span className="hidden sm:inline">Search...</span>
+        <span className="hidden sm:inline">{t("Search...", "Ara...")}</span>
         <kbd className="hidden sm:inline-flex h-5 select-none items-center gap-1 rounded border bg-muted px-1.5 font-mono text-[10px] font-medium text-muted-foreground">
           <span className="text-xs">⌘</span>K
         </kbd>
@@ -161,16 +163,16 @@ const GlobalSearch = () => {
 
       <CommandDialog open={open} onOpenChange={setOpen}>
         <CommandInput
-          placeholder="Search reservations, guests, menu items..."
+          placeholder={t("Search reservations, guests, menu items...", "Rezervasyon, misafir, menü öğesi ara...")}
           value={query}
           onValueChange={setQuery}
         />
         <CommandList>
-          <CommandEmpty>No results found.</CommandEmpty>
+          <CommandEmpty>{t("No results found.", "Sonuç bulunamadı.")}</CommandEmpty>
 
           {searchResults.length > 0 && (
             <>
-              <CommandGroup heading="Search Results">
+              <CommandGroup heading={t("Search Results", "Arama Sonuçları")}>
                 {searchResults.map((result) => (
                   <CommandItem
                     key={`${result.type}-${result.id}`}
@@ -193,7 +195,7 @@ const GlobalSearch = () => {
             </>
           )}
 
-          <CommandGroup heading="Navigation">
+          <CommandGroup heading={t("Navigation", "Navigasyon")}>
             {navigationItems.map((item) => (
               <CommandItem
                 key={item.path}

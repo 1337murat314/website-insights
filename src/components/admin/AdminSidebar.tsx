@@ -14,32 +14,37 @@ import {
   Gift,
   PartyPopper,
   ScrollText,
+  Globe,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
+import { useLanguage } from "@/contexts/LanguageContext";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
 import ThemeToggle from "./ThemeToggle";
 import GlobalSearch from "./GlobalSearch";
 
-const navItems = [
-  { path: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
-  { path: "/admin/reservations", label: "Reservations", icon: CalendarDays },
-  { path: "/admin/guests", label: "Guest CRM", icon: Crown },
-  { path: "/admin/menu", label: "Menu", icon: UtensilsCrossed },
-  { path: "/admin/tables", label: "Tables", icon: TableProperties },
-  { path: "/admin/promo-codes", label: "Promo Codes", icon: Gift },
-  { path: "/admin/events", label: "Events", icon: PartyPopper },
-  { path: "/admin/staff", label: "Staff", icon: Users },
-  { path: "/admin/analytics", label: "Analytics", icon: BarChart3 },
-  { path: "/admin/audit-logs", label: "Audit Logs", icon: ScrollText },
-  { path: "/admin/settings", label: "Settings", icon: Settings },
+const getNavItems = (t: (en: string, tr: string) => string) => [
+  { path: "/admin", label: t("Dashboard", "Kontrol Paneli"), icon: LayoutDashboard, exact: true },
+  { path: "/admin/reservations", label: t("Reservations", "Rezervasyonlar"), icon: CalendarDays },
+  { path: "/admin/guests", label: t("Guest CRM", "Misafir CRM"), icon: Crown },
+  { path: "/admin/menu", label: t("Menu", "Menü"), icon: UtensilsCrossed },
+  { path: "/admin/tables", label: t("Tables", "Masalar"), icon: TableProperties },
+  { path: "/admin/promo-codes", label: t("Promo Codes", "Promosyon Kodları"), icon: Gift },
+  { path: "/admin/events", label: t("Events", "Etkinlikler"), icon: PartyPopper },
+  { path: "/admin/staff", label: t("Staff", "Personel"), icon: Users },
+  { path: "/admin/analytics", label: t("Analytics", "Analitik"), icon: BarChart3 },
+  { path: "/admin/audit-logs", label: t("Audit Logs", "Denetim Kayıtları"), icon: ScrollText },
+  { path: "/admin/settings", label: t("Settings", "Ayarlar"), icon: Settings },
 ];
 
 const AdminSidebar = () => {
   const location = useLocation();
   const { signOut, user } = useAuth();
+  const { language, setLanguage, t } = useLanguage();
   const [collapsed, setCollapsed] = useState(false);
+
+  const navItems = getNavItems(t);
 
   const isActive = (path: string, exact?: boolean) => {
     if (exact) return location.pathname === path;
@@ -84,11 +89,21 @@ const AdminSidebar = () => {
             </div>
           </div>
 
-          {/* Search and Theme Toggle */}
+          {/* Search, Theme Toggle, and Language Toggle */}
           {!collapsed && (
             <div className="px-4 py-3 border-b border-border flex items-center gap-2">
               <GlobalSearch />
               <ThemeToggle />
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={() => setLanguage(language === "en" ? "tr" : "en")}
+                className="h-9 w-9 shrink-0"
+                title={t("Switch to Turkish", "İngilizce'ye Geç")}
+              >
+                <Globe className="h-4 w-4" />
+                <span className="sr-only">{language === "en" ? "TR" : "EN"}</span>
+              </Button>
             </div>
           )}
 
@@ -118,7 +133,7 @@ const AdminSidebar = () => {
             {!collapsed && user && (
               <div className="mb-3 px-3">
                 <p className="text-sm font-medium truncate">{user.email}</p>
-                <p className="text-xs text-muted-foreground">Administrator</p>
+                <p className="text-xs text-muted-foreground">{t("Administrator", "Yönetici")}</p>
               </div>
             )}
             <Button
@@ -130,7 +145,7 @@ const AdminSidebar = () => {
               onClick={signOut}
             >
               <LogOut className="h-5 w-5" />
-              {!collapsed && "Sign Out"}
+              {!collapsed && t("Sign Out", "Çıkış Yap")}
             </Button>
           </div>
 
