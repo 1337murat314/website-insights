@@ -62,13 +62,21 @@ export default {
           border: "hsl(var(--sidebar-border))",
           ring: "hsl(var(--sidebar-ring))",
         },
-        // Modern brand colors
-        gold: {
-          DEFAULT: "hsl(var(--gold))",
-          light: "hsl(var(--gold-light))",
-          dark: "hsl(var(--gold-dark))",
+        // Brand colors - Coral/Sunset theme
+        coral: {
+          DEFAULT: "hsl(var(--coral))",
+          light: "hsl(var(--coral-light))",
+          dark: "hsl(var(--coral-dark))",
         },
-        warm: "hsl(var(--warm))",
+        terracotta: "hsl(var(--terracotta))",
+        sand: {
+          DEFAULT: "hsl(var(--sand))",
+          dark: "hsl(var(--sand-dark))",
+        },
+        charcoal: "hsl(var(--charcoal))",
+        cream: "hsl(var(--cream))",
+        gold: "hsl(var(--gold))",
+        warm: "hsl(var(--terracotta))",
         neutral: {
           50: "hsl(var(--neutral-50))",
           100: "hsl(var(--neutral-100))",
@@ -129,15 +137,15 @@ export default {
         "gradient-conic": "conic-gradient(var(--tw-gradient-stops))",
         "hero-gradient": "linear-gradient(180deg, hsl(var(--background)) 0%, transparent 50%, hsl(var(--background)) 100%)",
         "card-gradient": "linear-gradient(180deg, hsl(var(--card)), hsl(var(--secondary)))",
-        "gold-gradient": "linear-gradient(135deg, hsl(var(--gold)) 0%, hsl(var(--gold-light)) 50%, hsl(var(--gold)) 100%)",
-        "mesh-gradient": "radial-gradient(at 40% 20%, hsl(var(--primary) / 0.15) 0px, transparent 50%), radial-gradient(at 80% 0%, hsl(var(--accent) / 0.1) 0px, transparent 50%), radial-gradient(at 0% 50%, hsl(var(--primary) / 0.1) 0px, transparent 50%)",
+        "coral-gradient": "linear-gradient(135deg, hsl(var(--coral)) 0%, hsl(var(--coral-light)) 50%, hsl(var(--coral)) 100%)",
+        "mesh-gradient": "radial-gradient(at 40% 20%, hsl(var(--primary) / 0.12) 0px, transparent 50%), radial-gradient(at 80% 0%, hsl(var(--accent) / 0.08) 0px, transparent 50%), radial-gradient(at 0% 50%, hsl(var(--primary) / 0.08) 0px, transparent 50%)",
       },
       boxShadow: {
-        "glow": "0 0 60px hsl(var(--primary) / 0.2)",
-        "glow-lg": "0 0 100px hsl(var(--primary) / 0.3)",
+        "glow": "0 0 60px hsl(var(--primary) / 0.25)",
+        "glow-lg": "0 0 100px hsl(var(--primary) / 0.35)",
         "elegant": "0 25px 50px -12px hsl(0 0% 0% / 0.25)",
         "card": "0 4px 6px -1px hsl(0 0% 0% / 0.1), 0 2px 4px -2px hsl(0 0% 0% / 0.1)",
-        "card-hover": "0 20px 40px -15px hsl(0 0% 0% / 0.3)",
+        "card-hover": "0 20px 40px -15px hsl(var(--primary) / 0.25)",
       },
     },
   },
