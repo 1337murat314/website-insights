@@ -11,7 +11,8 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Edit, Trash2, UtensilsCrossed, Leaf, Wheat, Flame } from "lucide-react";
+import { Plus, Edit, Trash2, UtensilsCrossed, Leaf, Wheat, Flame, Image } from "lucide-react";
+import ImageUpload from "@/components/admin/ImageUpload";
 
 interface Category {
   id: string;
@@ -187,7 +188,25 @@ const AdminMenu = () => {
                   animate={{ opacity: 1, y: 0 }}
                   transition={{ delay: index * 0.05 }}
                 >
-                  <Card className={`border-border/50 ${!item.is_available ? "opacity-50" : ""}`}>
+                  <Card className={`border-border/50 overflow-hidden ${!item.is_available ? "opacity-50" : ""}`}>
+                    {item.image_url ? (
+                      <div className="relative h-40 overflow-hidden">
+                        <img 
+                          src={item.image_url} 
+                          alt={item.name}
+                          className="w-full h-full object-cover"
+                        />
+                        {item.is_featured && (
+                          <span className="absolute top-2 right-2 bg-primary text-primary-foreground text-xs px-2 py-1 rounded-full">
+                            Featured
+                          </span>
+                        )}
+                      </div>
+                    ) : (
+                      <div className="h-40 bg-secondary/50 flex items-center justify-center">
+                        <Image className="h-12 w-12 text-muted-foreground/30" />
+                      </div>
+                    )}
                     <CardContent className="p-4">
                       <div className="flex justify-between items-start mb-2">
                         <div>
@@ -289,8 +308,11 @@ const AdminMenu = () => {
               </Select>
             </div>
             <div className="col-span-2 space-y-2">
-              <Label>Image URL</Label>
-              <Input value={editingItem.image_url || ""} onChange={(e) => setEditingItem({ ...editingItem, image_url: e.target.value })} />
+              <Label>Food Image</Label>
+              <ImageUpload
+                value={editingItem.image_url}
+                onChange={(url) => setEditingItem({ ...editingItem, image_url: url })}
+              />
             </div>
             <div className="col-span-2 grid grid-cols-3 gap-4">
               <div className="flex items-center gap-2">
