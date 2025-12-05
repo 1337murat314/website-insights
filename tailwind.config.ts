@@ -14,8 +14,10 @@ export default {
     },
     extend: {
       fontFamily: {
-        sans: ["Montserrat", "sans-serif"],
-        serif: ["Cormorant Garamond", "serif"],
+        sans: ["Outfit", "sans-serif"],
+        serif: ["Playfair Display", "serif"],
+        display: ["Libre Baskerville", "serif"],
+        script: ["Dancing Script", "cursive"],
       },
       colors: {
         border: "hsl(var(--border))",
@@ -134,6 +136,14 @@ export default {
         "gradient-radial": "radial-gradient(var(--tw-gradient-stops))",
         "hero-gradient": "linear-gradient(135deg, hsl(var(--primary) / 0.9), hsl(var(--accent) / 0.8))",
         "card-gradient": "linear-gradient(180deg, hsl(var(--card)), hsl(var(--secondary)))",
+        "shimmer-gradient": "linear-gradient(90deg, transparent, hsl(var(--primary) / 0.1), transparent)",
+        "gold-gradient": "linear-gradient(135deg, hsl(45 90% 50%), hsl(35 85% 45%), hsl(45 90% 50%))",
+      },
+      boxShadow: {
+        "glow": "0 0 40px hsl(var(--primary) / 0.3)",
+        "glow-lg": "0 0 60px hsl(var(--primary) / 0.4)",
+        "elegant": "0 25px 50px -12px hsl(var(--charcoal) / 0.25)",
+        "card-hover": "0 20px 40px -15px hsl(var(--charcoal) / 0.3)",
       },
     },
   },
