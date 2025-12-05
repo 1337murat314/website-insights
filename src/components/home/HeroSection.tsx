@@ -72,7 +72,7 @@ const HeroSection = () => {
               <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.98 }}>
                 <Button
                   size="lg"
-                  className="bg-primary hover:bg-accent text-primary-foreground font-semibold px-8 py-6 text-lg"
+                  className="bg-primary hover:bg-primary/90 text-charcoal font-semibold px-8 py-6 text-lg shadow-lg"
                 >
                   {t("Reserve Your Table", "Masanızı Ayırtın")}
                 </Button>
