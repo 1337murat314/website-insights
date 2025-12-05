@@ -35,6 +35,102 @@ export type Database = {
         }
         Relationships: []
       }
+      audit_logs: {
+        Row: {
+          action: string
+          created_at: string
+          id: string
+          ip_address: string | null
+          new_data: Json | null
+          old_data: Json | null
+          record_id: string | null
+          table_name: string
+          user_agent: string | null
+          user_id: string | null
+        }
+        Insert: {
+          action: string
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          new_data?: Json | null
+          old_data?: Json | null
+          record_id?: string | null
+          table_name: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Update: {
+          action?: string
+          created_at?: string
+          id?: string
+          ip_address?: string | null
+          new_data?: Json | null
+          old_data?: Json | null
+          record_id?: string | null
+          table_name?: string
+          user_agent?: string | null
+          user_id?: string | null
+        }
+        Relationships: []
+      }
+      guests: {
+        Row: {
+          anniversary: string | null
+          birthday: string | null
+          created_at: string
+          dietary_restrictions: string[] | null
+          email: string | null
+          full_name: string
+          id: string
+          notes: string | null
+          phone: string | null
+          preferences: Json | null
+          seating_preference: string | null
+          tags: string[] | null
+          total_spent: number | null
+          total_visits: number | null
+          updated_at: string
+          vip_status: boolean | null
+        }
+        Insert: {
+          anniversary?: string | null
+          birthday?: string | null
+          created_at?: string
+          dietary_restrictions?: string[] | null
+          email?: string | null
+          full_name: string
+          id?: string
+          notes?: string | null
+          phone?: string | null
+          preferences?: Json | null
+          seating_preference?: string | null
+          tags?: string[] | null
+          total_spent?: number | null
+          total_visits?: number | null
+          updated_at?: string
+          vip_status?: boolean | null
+        }
+        Update: {
+          anniversary?: string | null
+          birthday?: string | null
+          created_at?: string
+          dietary_restrictions?: string[] | null
+          email?: string | null
+          full_name?: string
+          id?: string
+          notes?: string | null
+          phone?: string | null
+          preferences?: Json | null
+          seating_preference?: string | null
+          tags?: string[] | null
+          total_spent?: number | null
+          total_visits?: number | null
+          updated_at?: string
+          vip_status?: boolean | null
+        }
+        Relationships: []
+      }
       menu_categories: {
         Row: {
           created_at: string
@@ -172,10 +268,59 @@ export type Database = {
         }
         Relationships: []
       }
+      promo_codes: {
+        Row: {
+          code: string
+          created_at: string
+          current_uses: number | null
+          description: string | null
+          discount_type: string
+          discount_value: number
+          id: string
+          is_active: boolean | null
+          max_uses: number | null
+          min_spend: number | null
+          updated_at: string
+          valid_from: string
+          valid_until: string | null
+        }
+        Insert: {
+          code: string
+          created_at?: string
+          current_uses?: number | null
+          description?: string | null
+          discount_type: string
+          discount_value: number
+          id?: string
+          is_active?: boolean | null
+          max_uses?: number | null
+          min_spend?: number | null
+          updated_at?: string
+          valid_from?: string
+          valid_until?: string | null
+        }
+        Update: {
+          code?: string
+          created_at?: string
+          current_uses?: number | null
+          description?: string | null
+          discount_type?: string
+          discount_value?: number
+          id?: string
+          is_active?: boolean | null
+          max_uses?: number | null
+          min_spend?: number | null
+          updated_at?: string
+          valid_from?: string
+          valid_until?: string | null
+        }
+        Relationships: []
+      }
       reservations: {
         Row: {
           created_at: string
           guest_email: string
+          guest_id: string | null
           guest_name: string
           guest_phone: string | null
           id: string
@@ -191,6 +336,7 @@ export type Database = {
         Insert: {
           created_at?: string
           guest_email: string
+          guest_id?: string | null
           guest_name: string
           guest_phone?: string | null
           id?: string
@@ -206,6 +352,7 @@ export type Database = {
         Update: {
           created_at?: string
           guest_email?: string
+          guest_id?: string | null
           guest_name?: string
           guest_phone?: string | null
           id?: string
@@ -219,6 +366,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "reservations_guest_id_fkey"
+            columns: ["guest_id"]
+            isOneToOne: false
+            referencedRelation: "guests"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "reservations_table_id_fkey"
             columns: ["table_id"]
@@ -278,6 +432,57 @@ export type Database = {
           is_available?: boolean | null
           location?: string | null
           table_number?: string
+          updated_at?: string
+        }
+        Relationships: []
+      }
+      special_events: {
+        Row: {
+          capacity: number | null
+          created_at: string
+          description: string | null
+          description_tr: string | null
+          end_time: string | null
+          event_date: string
+          id: string
+          image_url: string | null
+          is_active: boolean | null
+          price: number | null
+          start_time: string
+          title: string
+          title_tr: string | null
+          updated_at: string
+        }
+        Insert: {
+          capacity?: number | null
+          created_at?: string
+          description?: string | null
+          description_tr?: string | null
+          end_time?: string | null
+          event_date: string
+          id?: string
+          image_url?: string | null
+          is_active?: boolean | null
+          price?: number | null
+          start_time: string
+          title: string
+          title_tr?: string | null
+          updated_at?: string
+        }
+        Update: {
+          capacity?: number | null
+          created_at?: string
+          description?: string | null
+          description_tr?: string | null
+          end_time?: string | null
+          event_date?: string
+          id?: string
+          image_url?: string | null
+          is_active?: boolean | null
+          price?: number | null
+          start_time?: string
+          title?: string
+          title_tr?: string | null
           updated_at?: string
         }
         Relationships: []
