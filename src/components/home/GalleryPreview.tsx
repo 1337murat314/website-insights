@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
+import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/contexts/LanguageContext";
 import pannaCotta from "@/assets/gallery/panna-cotta.jpg";
@@ -25,7 +26,13 @@ const GalleryPreview = () => {
     <section className="section-padding bg-secondary">
       <div className="container mx-auto container-padding">
         {/* Header */}
-        <div className="text-center max-w-2xl mx-auto mb-12">
+        <motion.div
+          className="text-center max-w-2xl mx-auto mb-12"
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
+        >
           <p className="text-primary font-medium tracking-widest uppercase text-sm mb-4">
             {t("Gallery", "Galeri")}
           </p>
@@ -38,38 +45,53 @@ const GalleryPreview = () => {
               "Califorian deneyiminden bir kesit"
             )}
           </p>
-        </div>
+        </motion.div>
 
         {/* Gallery Grid */}
         <div className="grid grid-cols-2 md:grid-cols-3 gap-4">
           {previewImages.map((image, index) => (
-            <div
+            <motion.div
               key={image.id}
-              className={`relative overflow-hidden rounded-xl group ${
+              className={`relative overflow-hidden rounded-xl group cursor-pointer ${
                 index === 0 ? "md:col-span-2 md:row-span-2" : ""
               }`}
+              initial={{ opacity: 0, scale: 0.9 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: index * 0.1 }}
+              whileHover={{ scale: 1.02 }}
             >
-              <img
+              <motion.img
                 src={image.src}
                 alt={image.alt}
-                className={`w-full object-cover transition-transform duration-700 group-hover:scale-110 ${
+                className={`w-full object-cover ${
                   index === 0 ? "h-full min-h-[300px] md:min-h-[500px]" : "h-48 md:h-56"
                 }`}
+                whileHover={{ scale: 1.1 }}
+                transition={{ duration: 0.5 }}
               />
               <div className="absolute inset-0 bg-gradient-to-t from-charcoal/60 via-transparent to-transparent opacity-0 group-hover:opacity-100 transition-opacity duration-300" />
-            </div>
+            </motion.div>
           ))}
         </div>
 
         {/* CTA */}
-        <div className="text-center mt-12">
+        <motion.div
+          className="text-center mt-12"
+          initial={{ opacity: 0, y: 20 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.5, delay: 0.3 }}
+        >
           <Link to="/gallery">
-            <Button variant="outline" size="lg" className="group">
-              {t("View Full Gallery", "Tüm Galeriyi Gör")}
-              <ArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" size={18} />
-            </Button>
+            <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.98 }}>
+              <Button variant="outline" size="lg" className="group">
+                {t("View Full Gallery", "Tüm Galeriyi Gör")}
+                <ArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" size={18} />
+              </Button>
+            </motion.div>
           </Link>
-        </div>
+        </motion.div>
       </div>
     </section>
   );
