@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { ArrowRight } from "lucide-react";
+import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/contexts/LanguageContext";
 import waiterImage from "@/assets/gallery/waiter-serving.jpg";
@@ -15,12 +16,20 @@ const StorySection = () => {
       <div className="container mx-auto container-padding relative">
         <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
           {/* Image Side */}
-          <div className="relative">
+          <motion.div
+            className="relative"
+            initial={{ opacity: 0, x: -50 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.7 }}
+          >
             <div className="relative z-10">
-              <img
+              <motion.img
                 src={waiterImage}
                 alt="Califorian service"
                 className="rounded-2xl shadow-2xl w-full h-[500px] object-cover"
+                whileHover={{ scale: 1.02 }}
+                transition={{ duration: 0.4 }}
               />
             </div>
             {/* Decorative Element */}
@@ -28,16 +37,28 @@ const StorySection = () => {
             <div className="absolute -top-6 -left-6 w-32 h-32 border-2 border-primary/30 rounded-2xl -z-10" />
 
             {/* Stats Card */}
-            <div className="absolute bottom-8 left-8 bg-card/95 backdrop-blur-sm rounded-xl p-6 shadow-xl">
+            <motion.div
+              className="absolute bottom-8 left-8 bg-card/95 backdrop-blur-sm rounded-xl p-6 shadow-xl"
+              initial={{ opacity: 0, scale: 0.8 }}
+              whileInView={{ opacity: 1, scale: 1 }}
+              viewport={{ once: true }}
+              transition={{ duration: 0.5, delay: 0.3 }}
+            >
               <p className="font-serif text-4xl font-bold text-primary">23+</p>
               <p className="text-muted-foreground text-sm">
                 {t("Years of Excellence", "Yıllık Mükemmellik")}
               </p>
-            </div>
-          </div>
+            </motion.div>
+          </motion.div>
 
           {/* Content Side */}
-          <div className="space-y-6">
+          <motion.div
+            className="space-y-6"
+            initial={{ opacity: 0, x: 50 }}
+            whileInView={{ opacity: 1, x: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.7 }}
+          >
             <p className="text-primary font-medium tracking-widest uppercase text-sm">
               {t("Our Story", "Hikayemiz")}
             </p>
@@ -61,27 +82,33 @@ const StorySection = () => {
             </p>
 
             <div className="flex flex-wrap gap-8 pt-4">
-              <div>
-                <p className="font-serif text-3xl font-bold text-foreground">3</p>
-                <p className="text-muted-foreground text-sm">{t("Locations", "Şube")}</p>
-              </div>
-              <div>
-                <p className="font-serif text-3xl font-bold text-foreground">1000+</p>
-                <p className="text-muted-foreground text-sm">{t("Daily Catering", "Günlük Catering")}</p>
-              </div>
-              <div>
-                <p className="font-serif text-3xl font-bold text-foreground">100K+</p>
-                <p className="text-muted-foreground text-sm">{t("Happy Guests", "Mutlu Misafir")}</p>
-              </div>
+              {[
+                { value: "3", label: t("Locations", "Şube") },
+                { value: "1000+", label: t("Daily Catering", "Günlük Catering") },
+                { value: "100K+", label: t("Happy Guests", "Mutlu Misafir") },
+              ].map((stat, index) => (
+                <motion.div
+                  key={index}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.4, delay: 0.2 + index * 0.1 }}
+                >
+                  <p className="font-serif text-3xl font-bold text-foreground">{stat.value}</p>
+                  <p className="text-muted-foreground text-sm">{stat.label}</p>
+                </motion.div>
+              ))}
             </div>
 
             <Link to="/about">
-              <Button size="lg" className="bg-primary hover:bg-accent text-primary-foreground mt-4 group">
-                {t("Learn More", "Daha Fazla")}
-                <ArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" size={18} />
-              </Button>
+              <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.98 }} className="inline-block mt-4">
+                <Button size="lg" className="bg-primary hover:bg-accent text-primary-foreground group">
+                  {t("Learn More", "Daha Fazla")}
+                  <ArrowRight className="ml-2 group-hover:translate-x-1 transition-transform" size={18} />
+                </Button>
+              </motion.div>
             </Link>
-          </div>
+          </motion.div>
         </div>
       </div>
     </section>

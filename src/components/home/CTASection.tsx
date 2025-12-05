@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
 import { Calendar, Phone } from "lucide-react";
+import { motion } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { RESTAURANT_PHONE } from "@/lib/constants";
@@ -21,7 +22,13 @@ const CTASection = () => {
       </div>
 
       <div className="container mx-auto container-padding relative">
-        <div className="max-w-3xl mx-auto text-center text-cream">
+        <motion.div
+          className="max-w-3xl mx-auto text-center text-cream"
+          initial={{ opacity: 0, y: 30 }}
+          whileInView={{ opacity: 1, y: 0 }}
+          viewport={{ once: true }}
+          transition={{ duration: 0.6 }}
+        >
           <h2 className="font-serif text-4xl md:text-5xl lg:text-6xl font-bold mb-6">
             {t("Ready for an", "Unutulmaz bir")}
             <br />
@@ -40,28 +47,37 @@ const CTASection = () => {
             )}
           </p>
 
-          <div className="flex flex-col sm:flex-row gap-4 justify-center">
+          <motion.div
+            className="flex flex-col sm:flex-row gap-4 justify-center"
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5, delay: 0.2 }}
+          >
             <Link to="/reservations">
-              <Button
-                size="lg"
-                className="bg-primary hover:bg-accent text-primary-foreground font-semibold px-8 py-6 text-lg w-full sm:w-auto"
-              >
-                <Calendar className="mr-2" size={20} />
-                {t("Make a Reservation", "Rezervasyon Yap")}
-              </Button>
+              <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.98 }}>
+                <Button
+                  size="lg"
+                  className="bg-primary hover:bg-accent text-primary-foreground font-semibold px-8 py-6 text-lg w-full sm:w-auto"
+                >
+                  <Calendar className="mr-2" size={20} />
+                  {t("Make a Reservation", "Rezervasyon Yap")}
+                </Button>
+              </motion.div>
             </Link>
             <a href={`tel:${RESTAURANT_PHONE}`}>
-              <Button
-                size="lg"
-                variant="outline"
-                className="border-cream/30 text-cream hover:bg-cream/10 font-semibold px-8 py-6 text-lg w-full sm:w-auto"
-              >
-                <Phone className="mr-2" size={20} />
-                392 444 7070
-              </Button>
+              <motion.div whileHover={{ scale: 1.03 }} whileTap={{ scale: 0.98 }}>
+                <Button
+                  size="lg"
+                  className="bg-cream/10 border-2 border-cream text-cream hover:bg-cream hover:text-charcoal font-semibold px-8 py-6 text-lg w-full sm:w-auto backdrop-blur-sm transition-all"
+                >
+                  <Phone className="mr-2" size={20} />
+                  392 444 7070
+                </Button>
+              </motion.div>
             </a>
-          </div>
-        </div>
+          </motion.div>
+        </motion.div>
       </div>
     </section>
   );
