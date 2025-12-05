@@ -55,8 +55,7 @@ const HeroSection = () => {
             <Link to="/menu">
               <Button
                 size="lg"
-                variant="outline"
-                className="border-cream/30 text-cream hover:bg-cream/10 font-semibold px-8 py-6 text-lg"
+                className="bg-cream/10 border-2 border-cream text-cream hover:bg-cream hover:text-charcoal font-semibold px-8 py-6 text-lg backdrop-blur-sm transition-all"
               >
                 {t("Explore Menu", "Menüyü Keşfedin")}
               </Button>
