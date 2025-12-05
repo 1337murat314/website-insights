@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { NAV_LINKS } from "@/lib/constants";
-import logoDark from "@/assets/logo-dark.png";
+import logoLight from "@/assets/logo-light.png";
 
 const Header = () => {
   const [isOpen, setIsOpen] = useState(false);
@@ -41,7 +41,7 @@ const Header = () => {
           {/* Logo */}
           <Link to="/" className="relative z-10">
             <motion.img
-              src={logoDark}
+              src={logoLight}
               alt="Califorian"
               className="h-10 md:h-12 w-auto"
               whileHover={{ scale: 1.05 }}

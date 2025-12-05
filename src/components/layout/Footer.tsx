@@ -3,7 +3,7 @@ import { MapPin, Phone, Mail, Instagram, Facebook, ArrowUpRight } from "lucide-r
 import { motion } from "framer-motion";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { BRANCHES, NAV_LINKS, RESTAURANT_PHONE } from "@/lib/constants";
-import logoDark from "@/assets/logo-dark.png";
+import logoLight from "@/assets/logo-light.png";
 
 const Footer = () => {
   const { language, t } = useLanguage();
@@ -15,7 +15,7 @@ const Footer = () => {
           {/* Brand */}
           <div className="lg:col-span-1 space-y-6">
             <Link to="/">
-              <img src={logoDark} alt="Califorian" className="h-12 w-auto" />
+              <img src={logoLight} alt="Califorian" className="h-12 w-auto" />
             </Link>
             <p className="text-muted-foreground text-sm leading-relaxed">
               {t(
