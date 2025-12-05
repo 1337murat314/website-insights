@@ -413,6 +413,8 @@ export type Database = {
           id: string
           is_available: boolean | null
           location: string | null
+          pos_x: number | null
+          pos_y: number | null
           table_number: string
           updated_at: string
         }
@@ -422,6 +424,8 @@ export type Database = {
           id?: string
           is_available?: boolean | null
           location?: string | null
+          pos_x?: number | null
+          pos_y?: number | null
           table_number: string
           updated_at?: string
         }
@@ -431,6 +435,8 @@ export type Database = {
           id?: string
           is_available?: boolean | null
           location?: string | null
+          pos_x?: number | null
+          pos_y?: number | null
           table_number?: string
           updated_at?: string
         }
