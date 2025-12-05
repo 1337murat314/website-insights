@@ -1,5 +1,6 @@
 import { Link } from "react-router-dom";
-import { MapPin, Phone, Mail, Instagram, Facebook } from "lucide-react";
+import { MapPin, Phone, Mail, Instagram, Facebook, ArrowUpRight } from "lucide-react";
+import { motion } from "framer-motion";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { BRANCHES, NAV_LINKS, RESTAURANT_PHONE } from "@/lib/constants";
 import logoDark from "@/assets/logo-dark.png";
@@ -8,53 +9,58 @@ const Footer = () => {
   const { language, t } = useLanguage();
 
   return (
-    <footer className="bg-charcoal text-cream">
-      <div className="container mx-auto container-padding section-padding">
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12">
+    <footer className="bg-card border-t border-border">
+      <div className="container mx-auto container-padding py-20">
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-12 lg:gap-8">
           {/* Brand */}
-          <div className="space-y-4">
-            <Link to="/" className="flex items-center gap-3">
-              <img src={logoDark} alt="Califorian Restaurant" className="h-16 w-auto brightness-0 invert" />
+          <div className="lg:col-span-1 space-y-6">
+            <Link to="/">
+              <img src={logoDark} alt="Califorian" className="h-12 w-auto" />
             </Link>
-            <p className="text-cream/70 text-sm leading-relaxed">
+            <p className="text-muted-foreground text-sm leading-relaxed">
               {t(
-                "23 years as the address of quality and trust. Serving healthy and delicious food with passion and dedication.",
-                "23 yıldır kalite ve güvenin adresi. Sağlıklı ve lezzetli yemekler ile tutku ve özveri ile hizmet veriyoruz."
+                "23 years as the address of quality and trust. Serving healthy and delicious food with passion.",
+                "23 yıldır kalite ve güvenin adresi. Tutku ile sağlıklı ve lezzetli yemekler sunuyoruz."
               )}
             </p>
-            <div className="flex gap-4 pt-2">
-              <a
+            <div className="flex gap-3">
+              <motion.a
                 href="https://instagram.com/califorianrestaurant"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-cream/70 hover:text-primary transition-colors"
+                className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center text-muted-foreground hover:bg-primary hover:text-primary-foreground transition-all duration-300"
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.95 }}
               >
-                <Instagram size={20} />
-              </a>
-              <a
+                <Instagram size={18} />
+              </motion.a>
+              <motion.a
                 href="https://facebook.com/califorianrestaurant"
                 target="_blank"
                 rel="noopener noreferrer"
-                className="text-cream/70 hover:text-primary transition-colors"
+                className="w-10 h-10 rounded-full bg-secondary flex items-center justify-center text-muted-foreground hover:bg-primary hover:text-primary-foreground transition-all duration-300"
+                whileHover={{ scale: 1.1 }}
+                whileTap={{ scale: 0.95 }}
               >
-                <Facebook size={20} />
-              </a>
+                <Facebook size={18} />
+              </motion.a>
             </div>
           </div>
 
           {/* Quick Links */}
           <div>
-            <h4 className="font-serif text-lg font-semibold mb-4">
+            <h4 className="font-display font-semibold text-foreground mb-6">
               {t("Quick Links", "Hızlı Bağlantılar")}
             </h4>
-            <ul className="space-y-2">
+            <ul className="space-y-3">
               {NAV_LINKS.map((link) => (
                 <li key={link.href}>
                   <Link
                     to={link.href}
-                    className="text-cream/70 hover:text-primary transition-colors text-sm"
+                    className="group flex items-center text-muted-foreground hover:text-foreground transition-colors text-sm"
                   >
                     {language === "en" ? link.labelEn : link.labelTr}
+                    <ArrowUpRight className="ml-1 w-3 h-3 opacity-0 -translate-y-1 translate-x-1 group-hover:opacity-100 group-hover:translate-y-0 group-hover:translate-x-0 transition-all" />
                   </Link>
                 </li>
               ))}
@@ -63,35 +69,49 @@ const Footer = () => {
 
           {/* Contact */}
           <div>
-            <h4 className="font-serif text-lg font-semibold mb-4">
+            <h4 className="font-display font-semibold text-foreground mb-6">
               {t("Contact", "İletişim")}
             </h4>
-            <ul className="space-y-3">
-              <li className="flex items-start gap-3 text-sm text-cream/70">
-                <Phone size={16} className="mt-0.5 text-primary" />
-                <a href={`tel:${RESTAURANT_PHONE}`} className="hover:text-primary transition-colors">
+            <ul className="space-y-4">
+              <li>
+                <a 
+                  href={`tel:${RESTAURANT_PHONE}`} 
+                  className="flex items-center gap-3 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                    <Phone size={14} className="text-primary" />
+                  </div>
                   392 444 7070
                 </a>
               </li>
-              <li className="flex items-start gap-3 text-sm text-cream/70">
-                <Mail size={16} className="mt-0.5 text-primary" />
-                <span>info@califorianrestaurant.com</span>
+              <li>
+                <a 
+                  href="mailto:info@califorianrestaurant.com" 
+                  className="flex items-center gap-3 text-sm text-muted-foreground hover:text-foreground transition-colors"
+                >
+                  <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center">
+                    <Mail size={14} className="text-primary" />
+                  </div>
+                  info@califorianrestaurant.com
+                </a>
               </li>
             </ul>
           </div>
 
           {/* Locations */}
           <div>
-            <h4 className="font-serif text-lg font-semibold mb-4">
-              {t("Our Locations", "Şubelerimiz")}
+            <h4 className="font-display font-semibold text-foreground mb-6">
+              {t("Locations", "Şubelerimiz")}
             </h4>
-            <ul className="space-y-3">
+            <ul className="space-y-4">
               {BRANCHES.map((branch) => (
-                <li key={branch.id} className="flex items-start gap-3 text-sm text-cream/70">
-                  <MapPin size={16} className="mt-0.5 text-primary flex-shrink-0" />
+                <li key={branch.id} className="flex items-start gap-3">
+                  <div className="w-8 h-8 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0 mt-0.5">
+                    <MapPin size={14} className="text-primary" />
+                  </div>
                   <div>
-                    <p className="font-medium text-cream">{branch.name}</p>
-                    <p className="text-xs">{branch.hours}</p>
+                    <p className="font-medium text-foreground text-sm">{branch.name}</p>
+                    <p className="text-xs text-muted-foreground">{branch.hours}</p>
                   </div>
                 </li>
               ))}
@@ -100,16 +120,16 @@ const Footer = () => {
         </div>
 
         {/* Bottom Bar */}
-        <div className="mt-12 pt-8 border-t border-cream/10 flex flex-col md:flex-row justify-between items-center gap-4">
-          <p className="text-cream/50 text-sm">
-            © {new Date().getFullYear()} Califorian Restaurant. {t("All rights reserved.", "Tüm hakları saklıdır.")}
+        <div className="mt-16 pt-8 border-t border-border flex flex-col md:flex-row justify-between items-center gap-4">
+          <p className="text-muted-foreground text-sm">
+            © {new Date().getFullYear()} Califorian. {t("All rights reserved.", "Tüm hakları saklıdır.")}
           </p>
-          <div className="flex gap-6 text-sm text-cream/50">
-            <Link to="/privacy" className="hover:text-primary transition-colors">
-              {t("Privacy Policy", "Gizlilik Politikası")}
+          <div className="flex gap-6 text-sm text-muted-foreground">
+            <Link to="/privacy" className="hover:text-foreground transition-colors">
+              {t("Privacy", "Gizlilik")}
             </Link>
-            <Link to="/terms" className="hover:text-primary transition-colors">
-              {t("Terms of Service", "Kullanım Şartları")}
+            <Link to="/terms" className="hover:text-foreground transition-colors">
+              {t("Terms", "Şartlar")}
             </Link>
           </div>
         </div>
