@@ -24,6 +24,10 @@ import AdminTables from "./pages/admin/AdminTables";
 import AdminStaff from "./pages/admin/AdminStaff";
 import AdminAnalytics from "./pages/admin/AdminAnalytics";
 import AdminSettings from "./pages/admin/AdminSettings";
+import AdminGuests from "./pages/admin/AdminGuests";
+import AdminPromoCodes from "./pages/admin/AdminPromoCodes";
+import AdminEvents from "./pages/admin/AdminEvents";
+import AdminAuditLogs from "./pages/admin/AdminAuditLogs";
 
 const queryClient = new QueryClient();
 
@@ -46,10 +50,14 @@ const AnimatedRoutes = () => {
         <Route path="/admin" element={<AdminLayout />}>
           <Route index element={<AdminDashboard />} />
           <Route path="reservations" element={<AdminReservations />} />
+          <Route path="guests" element={<AdminGuests />} />
           <Route path="menu" element={<AdminMenu />} />
           <Route path="tables" element={<AdminTables />} />
+          <Route path="promo-codes" element={<AdminPromoCodes />} />
+          <Route path="events" element={<AdminEvents />} />
           <Route path="staff" element={<AdminStaff />} />
           <Route path="analytics" element={<AdminAnalytics />} />
+          <Route path="audit-logs" element={<AdminAuditLogs />} />
           <Route path="settings" element={<AdminSettings />} />
         </Route>
         

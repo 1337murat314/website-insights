@@ -9,20 +9,30 @@ import {
   TableProperties,
   LogOut,
   ChefHat,
-  Menu
+  Menu,
+  Crown,
+  Gift,
+  PartyPopper,
+  ScrollText,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { Button } from "@/components/ui/button";
 import { cn } from "@/lib/utils";
 import { useState } from "react";
+import ThemeToggle from "./ThemeToggle";
+import GlobalSearch from "./GlobalSearch";
 
 const navItems = [
   { path: "/admin", label: "Dashboard", icon: LayoutDashboard, exact: true },
   { path: "/admin/reservations", label: "Reservations", icon: CalendarDays },
+  { path: "/admin/guests", label: "Guest CRM", icon: Crown },
   { path: "/admin/menu", label: "Menu", icon: UtensilsCrossed },
   { path: "/admin/tables", label: "Tables", icon: TableProperties },
+  { path: "/admin/promo-codes", label: "Promo Codes", icon: Gift },
+  { path: "/admin/events", label: "Events", icon: PartyPopper },
   { path: "/admin/staff", label: "Staff", icon: Users },
   { path: "/admin/analytics", label: "Analytics", icon: BarChart3 },
+  { path: "/admin/audit-logs", label: "Audit Logs", icon: ScrollText },
   { path: "/admin/settings", label: "Settings", icon: Settings },
 ];
 
@@ -73,6 +83,14 @@ const AdminSidebar = () => {
               )}
             </div>
           </div>
+
+          {/* Search and Theme Toggle */}
+          {!collapsed && (
+            <div className="px-4 py-3 border-b border-border flex items-center gap-2">
+              <GlobalSearch />
+              <ThemeToggle />
+            </div>
+          )}
 
           {/* Navigation */}
           <nav className="flex-1 p-4 space-y-1">
