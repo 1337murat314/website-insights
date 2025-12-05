@@ -7,13 +7,15 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Calendar, Clock, Users, MapPin, Check } from "lucide-react";
+import { Calendar, Clock, Users, MapPin, Check, Loader2 } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
+import { supabase } from "@/integrations/supabase/client";
 
 const Reservations = () => {
   const { t } = useLanguage();
   const { toast } = useToast();
   const [step, setStep] = useState(1);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const [formData, setFormData] = useState({
     branch: "",
     date: "",
@@ -33,9 +35,35 @@ const Reservations = () => {
 
   const guestOptions = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10+"];
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    // In a real app, this would send to backend
+    setIsSubmitting(true);
+
+    const partySize = formData.guests === "10+" ? 10 : parseInt(formData.guests);
+
+    const { error } = await supabase.from("reservations").insert({
+      guest_name: formData.name,
+      guest_email: formData.email,
+      guest_phone: formData.phone || null,
+      party_size: partySize,
+      reservation_date: formData.date,
+      reservation_time: formData.time,
+      special_requests: formData.specialRequests || null,
+      status: "pending",
+    });
+
+    setIsSubmitting(false);
+
+    if (error) {
+      console.error("Reservation error:", error);
+      toast({
+        title: t("Error", "Hata"),
+        description: t("Failed to create reservation. Please try again.", "Rezervasyon oluşturulamadı. Lütfen tekrar deneyin."),
+        variant: "destructive",
+      });
+      return;
+    }
+
     toast({
       title: t("Reservation Request Sent!", "Rezervasyon Talebi Gönderildi!"),
       description: t(
@@ -43,7 +71,7 @@ const Reservations = () => {
         "Rezervasyonunuzu kısa süre içinde e-posta ile onaylayacağız."
       ),
     });
-    setStep(4); // Success step
+    setStep(4);
   };
 
   const updateFormData = (field: string, value: string) => {
@@ -288,11 +316,18 @@ const Reservations = () => {
                 </div>
 
                 <div className="flex gap-4">
-                  <Button type="button" variant="outline" onClick={() => setStep(2)} className="flex-1">
+                  <Button type="button" variant="outline" onClick={() => setStep(2)} className="flex-1" disabled={isSubmitting}>
                     {t("Back", "Geri")}
                   </Button>
-                  <Button type="submit" className="flex-1 bg-primary hover:bg-accent text-primary-foreground">
-                    {t("Confirm Reservation", "Rezervasyonu Onayla")}
+                  <Button type="submit" className="flex-1 bg-primary hover:bg-accent text-primary-foreground" disabled={isSubmitting}>
+                    {isSubmitting ? (
+                      <>
+                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                        {t("Submitting...", "Gönderiliyor...")}
+                      </>
+                    ) : (
+                      t("Confirm Reservation", "Rezervasyonu Onayla")
+                    )}
                   </Button>
                 </div>
               </form>
