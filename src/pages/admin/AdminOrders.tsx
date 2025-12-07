@@ -135,6 +135,7 @@ const AdminOrders = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [orderItems, setOrderItems] = useState<Record<string, OrderItem[]>>({});
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [orderTypeFilter, setOrderTypeFilter] = useState<string>("all");
   const [searchQuery, setSearchQuery] = useState("");
@@ -267,15 +268,21 @@ const AdminOrders = () => {
 
   const fetchOrders = async () => {
     try {
-      const { data, error } = await supabase
+      setError(null);
+      const { data, error: fetchError } = await supabase
         .from("orders")
         .select("*")
         .order("created_at", { ascending: false });
 
-      if (error) throw error;
+      if (fetchError) {
+        console.error("Error fetching orders:", fetchError);
+        setError(fetchError.message);
+        throw fetchError;
+      }
       setOrders(data || []);
-    } catch (error) {
-      console.error("Error fetching orders:", error);
+    } catch (err: any) {
+      console.error("Error fetching orders:", err);
+      setError(err?.message || "Unknown error");
       toast.error(t("Failed to load orders", "Siparişler yüklenemedi"));
     } finally {
       setLoading(false);
@@ -451,6 +458,33 @@ const AdminOrders = () => {
     };
     return flow[currentStatus] || null;
   };
+
+  if (loading) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <RefreshCw className="w-8 h-8 animate-spin text-primary mx-auto mb-4" />
+          <p className="text-muted-foreground">{t("Loading orders...", "Siparişler yükleniyor...")}</p>
+        </div>
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="flex items-center justify-center min-h-[400px]">
+        <div className="text-center">
+          <AlertCircle className="w-8 h-8 text-destructive mx-auto mb-4" />
+          <p className="text-destructive mb-2">{t("Error loading orders", "Siparişler yüklenirken hata oluştu")}</p>
+          <p className="text-sm text-muted-foreground mb-4">{error}</p>
+          <Button onClick={fetchOrders} variant="outline" className="gap-2">
+            <RefreshCw className="w-4 h-4" />
+            {t("Try Again", "Tekrar Dene")}
+          </Button>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="space-y-6">
