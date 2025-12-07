@@ -30,9 +30,8 @@ import AdminTables from "./pages/admin/AdminTables";
 import AdminStaff from "./pages/admin/AdminStaff";
 import AdminAnalytics from "./pages/admin/AdminAnalytics";
 import AdminSettings from "./pages/admin/AdminSettings";
-import AdminGuests from "./pages/admin/AdminGuests";
+import AdminLeads from "./pages/admin/AdminLeads";
 import AdminPromoCodes from "./pages/admin/AdminPromoCodes";
-import AdminEvents from "./pages/admin/AdminEvents";
 import AdminAuditLogs from "./pages/admin/AdminAuditLogs";
 import AdminOrders from "./pages/admin/AdminOrders";
 import AdminQRCodes from "./pages/admin/AdminQRCodes";
@@ -70,12 +69,11 @@ const AnimatedRoutes = () => {
           <Route path="orders" element={<AdminOrders />} />
           <Route path="kds" element={<AdminKDS />} />
           <Route path="reservations" element={<AdminReservations />} />
-          <Route path="guests" element={<AdminGuests />} />
+          <Route path="leads" element={<AdminLeads />} />
           <Route path="menu" element={<AdminMenu />} />
           <Route path="tables" element={<AdminTables />} />
           <Route path="qr-codes" element={<AdminQRCodes />} />
           <Route path="promo-codes" element={<AdminPromoCodes />} />
-          <Route path="events" element={<AdminEvents />} />
           <Route path="staff" element={<AdminStaff />} />
           <Route path="analytics" element={<AdminAnalytics />} />
           <Route path="audit-logs" element={<AdminAuditLogs />} />
