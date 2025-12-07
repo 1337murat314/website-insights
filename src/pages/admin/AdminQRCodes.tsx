@@ -69,12 +69,13 @@ const AdminQRCodes = () => {
 
     try {
       await Promise.all([
-        loadImage(qrImg, "data:image/svg+xml;base64," + btoa(svgData)),
+        loadImage(qrImg, "data:image/svg+xml;base64," + btoa(unescape(encodeURIComponent(svgData)))),
         loadImage(logoImg, logoImage)
       ]);
 
-      canvas.width = 420;
-      canvas.height = 600;
+      // Square-ish aspect ratio to prevent squashing
+      canvas.width = 500;
+      canvas.height = 650;
       
       if (ctx) {
         // Background with gradient
@@ -86,56 +87,58 @@ const AdminQRCodes = () => {
 
         // Top decorative bar
         ctx.fillStyle = "#E07A5F";
-        ctx.fillRect(0, 0, canvas.width, 8);
+        ctx.fillRect(0, 0, canvas.width, 10);
 
         // Logo centered at top
-        const logoWidth = 140;
-        const logoHeight = 48;
+        const logoWidth = 160;
+        const logoHeight = 55;
         ctx.drawImage(logoImg, (canvas.width - logoWidth) / 2, 30, logoWidth, logoHeight);
 
         // Decorative line under logo
         ctx.strokeStyle = "#E07A5F";
-        ctx.lineWidth = 1;
+        ctx.lineWidth = 2;
         ctx.beginPath();
-        ctx.moveTo(60, 95);
-        ctx.lineTo(canvas.width - 60, 95);
+        ctx.moveTo(80, 105);
+        ctx.lineTo(canvas.width - 80, 105);
         ctx.stroke();
 
         // White rounded container for QR
         ctx.fillStyle = "#FFFFFF";
-        const qrContainerX = 50;
-        const qrContainerY = 115;
-        const qrContainerSize = 320;
+        const qrSize = 320;
+        const qrContainerX = (canvas.width - qrSize) / 2;
+        const qrContainerY = 125;
         ctx.beginPath();
-        ctx.roundRect(qrContainerX, qrContainerY, qrContainerSize, qrContainerSize, 20);
+        ctx.roundRect(qrContainerX, qrContainerY, qrSize, qrSize, 20);
         ctx.fill();
         
-        // Draw QR code centered in container
-        ctx.drawImage(qrImg, qrContainerX + 20, qrContainerY + 20, 280, 280);
+        // Draw QR code centered in container (square aspect ratio)
+        const qrPadding = 20;
+        const qrDrawSize = qrSize - (qrPadding * 2);
+        ctx.drawImage(qrImg, qrContainerX + qrPadding, qrContainerY + qrPadding, qrDrawSize, qrDrawSize);
 
         // Table number - large and prominent
         ctx.fillStyle = "#F5E6D3";
-        ctx.font = "bold 48px Georgia, serif";
+        ctx.font = "bold 52px Georgia, serif";
         ctx.textAlign = "center";
-        ctx.fillText(`MASA ${tableNumber}`, canvas.width / 2, 485);
+        ctx.fillText(`MASA ${tableNumber}`, canvas.width / 2, 510);
         
         // English subtitle
         ctx.fillStyle = "#A8A29E";
-        ctx.font = "16px Arial, sans-serif";
-        ctx.fillText(`TABLE ${tableNumber}`, canvas.width / 2, 510);
+        ctx.font = "18px Arial, sans-serif";
+        ctx.fillText(`TABLE ${tableNumber}`, canvas.width / 2, 540);
 
         // Bilingual scan instruction
-        ctx.font = "bold 14px Arial, sans-serif";
+        ctx.font = "bold 16px Arial, sans-serif";
         ctx.fillStyle = "#E07A5F";
-        ctx.fillText("Menü için QR'ı Tarayın", canvas.width / 2, 548);
+        ctx.fillText("Menü için QR'ı Tarayın", canvas.width / 2, 585);
         
-        ctx.font = "12px Arial, sans-serif";
+        ctx.font = "14px Arial, sans-serif";
         ctx.fillStyle = "#78716C";
-        ctx.fillText("Scan QR for Menu", canvas.width / 2, 568);
+        ctx.fillText("Scan QR for Menu", canvas.width / 2, 608);
 
         // Bottom decorative bar
         ctx.fillStyle = "#E07A5F";
-        ctx.fillRect(0, canvas.height - 8, canvas.width, 8);
+        ctx.fillRect(0, canvas.height - 10, canvas.width, 10);
       }
 
       const pngFile = canvas.toDataURL("image/png");
@@ -404,7 +407,7 @@ const AdminQRCodes = () => {
               <Button
                 variant="outline"
                 size="sm"
-                className="w-full bg-transparent border-stone-600 hover:bg-stone-700 hover:border-stone-500"
+                className="w-full bg-stone-700 border-stone-500 text-cream hover:bg-stone-600 hover:border-stone-400"
                 onClick={() => downloadQRCode(table.table_number)}
               >
                 <Download className="h-4 w-4 mr-2" />
