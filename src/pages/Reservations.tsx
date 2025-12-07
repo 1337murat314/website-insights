@@ -1,7 +1,7 @@
 import { useState } from "react";
 import Layout from "@/components/layout/Layout";
 import { useLanguage } from "@/contexts/LanguageContext";
-import { BRANCHES } from "@/lib/constants";
+import { BRANCHES, RESTAURANT_PHONE } from "@/lib/constants";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
@@ -45,10 +45,15 @@ const Reservations = () => {
 
   const sendWhatsAppConfirmation = async (phone: string, name: string, date: string, time: string, guests: string, branch: string) => {
     try {
-      const branchName = BRANCHES.find((b) => b.id === branch)?.name || branch;
+      const branchData = BRANCHES.find((b) => b.id === branch);
+      const branchName = branchData?.name || branch;
+      const mapUrl = branchData?.mapUrl || "";
+      const branchAddress = branchData?.address || "";
+      const branchPhone = branchData?.phone || RESTAURANT_PHONE;
+      
       const message = t(
-        `🍽️ Califorian Restaurant Reservation Confirmation\n\nDear ${name},\n\nYour reservation has been received!\n\n📅 Date: ${date}\n⏰ Time: ${time}\n👥 Guests: ${guests}\n📍 Location: ${branchName}\n\nWe will confirm your reservation shortly.\n\nThank you for choosing Califorian!`,
-        `🍽️ Califorian Restaurant Rezervasyon Onayı\n\nSayın ${name},\n\nRezervasyonunuz alındı!\n\n📅 Tarih: ${date}\n⏰ Saat: ${time}\n👥 Kişi: ${guests}\n📍 Şube: ${branchName}\n\nRezervasyonunuz kısa süre içinde onaylanacaktır.\n\nCaliforian'ı tercih ettiğiniz için teşekkürler!`
+        `🍽️ Califorian Restaurant Reservation Confirmation\n\nDear ${name},\n\nYour reservation has been received!\n\n📅 Date: ${date}\n⏰ Time: ${time}\n👥 Guests: ${guests}\n📍 Location: ${branchName}\n📫 Address: ${branchAddress}\n📞 Phone: ${branchPhone}\n\n🗺️ Get Directions: ${mapUrl}\n\nWe will confirm your reservation shortly.\n\nThank you for choosing Califorian!`,
+        `🍽️ Califorian Restaurant Rezervasyon Onayı\n\nSayın ${name},\n\nRezervasyonunuz alındı!\n\n📅 Tarih: ${date}\n⏰ Saat: ${time}\n👥 Kişi: ${guests}\n📍 Şube: ${branchName}\n📫 Adres: ${branchAddress}\n📞 Telefon: ${branchPhone}\n\n🗺️ Yol Tarifi: ${mapUrl}\n\nRezervasyonunuz kısa süre içinde onaylanacaktır.\n\nCaliforian'ı tercih ettiğiniz için teşekkürler!`
       );
 
       const { data, error } = await supabase.functions.invoke('send-whatsapp', {
