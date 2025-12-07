@@ -24,7 +24,7 @@ interface Profile {
 interface UserRole {
   id: string;
   user_id: string;
-  role: "admin" | "manager" | "staff";
+  role: "admin" | "manager" | "staff" | "waiter";
 }
 
 interface StaffMember extends Profile {
@@ -127,6 +127,8 @@ const AdminStaff = () => {
         return <Badge className="bg-blue-500/10 text-blue-500 border-blue-500/20"><Shield className="h-3 w-3 mr-1" />Manager</Badge>;
       case "staff":
         return <Badge className="bg-green-500/10 text-green-500 border-green-500/20"><User className="h-3 w-3 mr-1" />Staff</Badge>;
+      case "waiter":
+        return <Badge className="bg-orange-500/10 text-orange-500 border-orange-500/20"><User className="h-3 w-3 mr-1" />Waiter</Badge>;
       default:
         return null;
     }
@@ -244,6 +246,7 @@ const AdminStaff = () => {
                 <SelectContent>
                   <SelectItem value="admin">Admin - Full access</SelectItem>
                   <SelectItem value="manager">Manager - Manage operations</SelectItem>
+                  <SelectItem value="waiter">Waiter - Table service</SelectItem>
                   <SelectItem value="staff">Staff - Basic access</SelectItem>
                 </SelectContent>
               </Select>
