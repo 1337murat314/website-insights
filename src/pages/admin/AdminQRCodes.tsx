@@ -59,7 +59,6 @@ const AdminQRCodes = () => {
     const qrImg = new Image();
     const logoImg = new Image();
 
-    // Load both images
     const loadImage = (img: HTMLImageElement, src: string): Promise<void> => {
       return new Promise((resolve, reject) => {
         img.onload = () => resolve();
@@ -74,64 +73,78 @@ const AdminQRCodes = () => {
         loadImage(logoImg, logoImage)
       ]);
 
-      canvas.width = 400;
-      canvas.height = 520;
+      canvas.width = 420;
+      canvas.height = 600;
       
       if (ctx) {
-        // Gradient background
+        // Background with gradient
         const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
-        gradient.addColorStop(0, "#1a1a1a");
-        gradient.addColorStop(1, "#2d2d2d");
+        gradient.addColorStop(0, "#1C1917");
+        gradient.addColorStop(1, "#292524");
         ctx.fillStyle = gradient;
         ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-        // Decorative top accent
+        // Top decorative bar
         ctx.fillStyle = "#E07A5F";
-        ctx.fillRect(0, 0, canvas.width, 6);
+        ctx.fillRect(0, 0, canvas.width, 8);
 
-        // Logo at top
-        const logoWidth = 120;
-        const logoHeight = 40;
-        ctx.drawImage(logoImg, (canvas.width - logoWidth) / 2, 20, logoWidth, logoHeight);
+        // Logo centered at top
+        const logoWidth = 140;
+        const logoHeight = 48;
+        ctx.drawImage(logoImg, (canvas.width - logoWidth) / 2, 30, logoWidth, logoHeight);
 
-        // White container for QR
-        ctx.fillStyle = "#ffffff";
-        const qrContainerX = 40;
-        const qrContainerY = 75;
+        // Decorative line under logo
+        ctx.strokeStyle = "#E07A5F";
+        ctx.lineWidth = 1;
+        ctx.beginPath();
+        ctx.moveTo(60, 95);
+        ctx.lineTo(canvas.width - 60, 95);
+        ctx.stroke();
+
+        // White rounded container for QR
+        ctx.fillStyle = "#FFFFFF";
+        const qrContainerX = 50;
+        const qrContainerY = 115;
         const qrContainerSize = 320;
         ctx.beginPath();
-        ctx.roundRect(qrContainerX, qrContainerY, qrContainerSize, qrContainerSize, 16);
+        ctx.roundRect(qrContainerX, qrContainerY, qrContainerSize, qrContainerSize, 20);
         ctx.fill();
         
-        // Draw QR code
-        ctx.drawImage(qrImg, 60, 95, 280, 280);
+        // Draw QR code centered in container
+        ctx.drawImage(qrImg, qrContainerX + 20, qrContainerY + 20, 280, 280);
 
-        // Table number with accent color
-        ctx.fillStyle = "#E07A5F";
-        ctx.font = "bold 14px 'Arial'";
-        ctx.textAlign = "center";
-        ctx.fillText("CALIFORIAN RESTAURANT", canvas.width / 2, 420);
-
-        // Table number
+        // Table number - large and prominent
         ctx.fillStyle = "#F5E6D3";
-        ctx.font = "bold 32px 'Georgia'";
-        ctx.fillText(`Table ${tableNumber}`, canvas.width / 2, 460);
+        ctx.font = "bold 48px Georgia, serif";
+        ctx.textAlign = "center";
+        ctx.fillText(`MASA ${tableNumber}`, canvas.width / 2, 485);
         
-        // Scan instruction
-        ctx.font = "14px 'Arial'";
-        ctx.fillStyle = "#888888";
-        ctx.fillText("Scan to view menu & order", canvas.width / 2, 490);
+        // English subtitle
+        ctx.fillStyle = "#A8A29E";
+        ctx.font = "16px Arial, sans-serif";
+        ctx.fillText(`TABLE ${tableNumber}`, canvas.width / 2, 510);
 
-        // Bottom accent
+        // Bilingual scan instruction
+        ctx.font = "bold 14px Arial, sans-serif";
         ctx.fillStyle = "#E07A5F";
-        ctx.fillRect(0, canvas.height - 6, canvas.width, 6);
+        ctx.fillText("Menü için QR'ı Tarayın", canvas.width / 2, 548);
+        
+        ctx.font = "12px Arial, sans-serif";
+        ctx.fillStyle = "#78716C";
+        ctx.fillText("Scan QR for Menu", canvas.width / 2, 568);
+
+        // Bottom decorative bar
+        ctx.fillStyle = "#E07A5F";
+        ctx.fillRect(0, canvas.height - 8, canvas.width, 8);
       }
 
       const pngFile = canvas.toDataURL("image/png");
       const downloadLink = document.createElement("a");
-      downloadLink.download = `califorian-table-${tableNumber}-qr.png`;
+      downloadLink.download = `califorian-masa-${tableNumber}-qr.png`;
       downloadLink.href = pngFile;
       downloadLink.click();
+      
+      toast.success(t("QR code downloaded", "QR kod indirildi"));
     } catch (error) {
       console.error("Error generating QR:", error);
       toast.error(t("Failed to download QR code", "QR kod indirilemedi"));
@@ -152,52 +165,78 @@ const AdminQRCodes = () => {
       <!DOCTYPE html>
       <html>
         <head>
-          <title>Table QR Codes - Califorian Restaurant</title>
+          <title>Califorian - Table QR Codes</title>
           <style>
-            @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&display=swap');
+            @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700&display=swap');
             * { margin: 0; padding: 0; box-sizing: border-box; }
-            body { font-family: Arial, sans-serif; background: #f5f5f5; }
+            body { 
+              font-family: Arial, sans-serif; 
+              background: #f5f5f5;
+              padding: 20px;
+            }
             .grid { 
               display: grid; 
               grid-template-columns: repeat(2, 1fr); 
-              gap: 24px; 
-              padding: 24px;
+              gap: 20px;
             }
             .qr-card {
-              background: linear-gradient(180deg, #1a1a1a 0%, #2d2d2d 100%);
-              border-radius: 16px;
-              padding: 24px;
+              background: linear-gradient(180deg, #1C1917 0%, #292524 100%);
+              border-radius: 20px;
+              padding: 28px 24px;
               text-align: center;
               page-break-inside: avoid;
-              border-top: 4px solid #E07A5F;
-              border-bottom: 4px solid #E07A5F;
+              border-top: 6px solid #E07A5F;
+              border-bottom: 6px solid #E07A5F;
+            }
+            .logo-area {
+              margin-bottom: 12px;
+            }
+            .logo-area img {
+              height: 36px;
+              width: auto;
+            }
+            .divider {
+              height: 1px;
+              background: #E07A5F;
+              margin: 0 20px 16px;
+              opacity: 0.6;
             }
             .qr-wrapper {
               background: #ffffff;
-              border-radius: 12px;
+              border-radius: 16px;
               padding: 16px;
               display: inline-block;
               margin-bottom: 16px;
             }
             .qr-card svg { display: block; }
-            .brand-text { 
-              font-size: 12px; 
-              font-weight: bold; 
-              color: #E07A5F; 
-              letter-spacing: 2px;
-              margin-bottom: 8px;
-            }
-            .table-number { 
+            .table-number-tr { 
               font-family: 'Playfair Display', Georgia, serif;
-              font-size: 28px; 
-              font-weight: bold; 
+              font-size: 36px; 
+              font-weight: 700; 
               color: #F5E6D3;
-              margin-bottom: 8px; 
+              margin-bottom: 4px;
+              letter-spacing: 2px;
             }
-            .scan-text { font-size: 12px; color: #888; }
+            .table-number-en { 
+              font-size: 14px; 
+              color: #A8A29E;
+              margin-bottom: 16px;
+              letter-spacing: 1px;
+            }
+            .scan-text-tr { 
+              font-size: 13px; 
+              font-weight: bold;
+              color: #E07A5F; 
+              margin-bottom: 4px;
+            }
+            .scan-text-en { 
+              font-size: 11px; 
+              color: #78716C;
+            }
             @media print {
-              body { background: white; }
-              .grid { grid-template-columns: repeat(2, 1fr); }
+              body { background: white; padding: 10px; }
+              .grid { gap: 15px; }
+              .qr-card { padding: 20px 16px; }
             }
           </style>
         </head>
@@ -205,12 +244,17 @@ const AdminQRCodes = () => {
           <div class="grid">
             ${tables.map(table => `
               <div class="qr-card">
+                <div class="logo-area">
+                  <img src="${logoImage}" alt="Califorian" />
+                </div>
+                <div class="divider"></div>
                 <div class="qr-wrapper">
                   ${document.getElementById(`qr-${table.table_number}`)?.outerHTML || ''}
                 </div>
-                <div class="brand-text">CALIFORIAN RESTAURANT</div>
-                <div class="table-number">Table ${table.table_number}</div>
-                <div class="scan-text">Scan to view menu & order</div>
+                <div class="table-number-tr">MASA ${table.table_number}</div>
+                <div class="table-number-en">TABLE ${table.table_number}</div>
+                <div class="scan-text-tr">Menü için QR'ı Tarayın</div>
+                <div class="scan-text-en">Scan QR for Menu</div>
               </div>
             `).join('')}
           </div>
@@ -227,7 +271,7 @@ const AdminQRCodes = () => {
         <Skeleton className="h-8 w-48" />
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
           {Array.from({ length: 8 }).map((_, i) => (
-            <Skeleton key={i} className="h-64 w-full rounded-xl" />
+            <Skeleton key={i} className="h-80 w-full rounded-xl" />
           ))}
         </div>
       </div>
@@ -284,61 +328,92 @@ const AdminQRCodes = () => {
       {/* QR Codes Grid */}
       <div ref={printRef} className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
         {tables.map((table) => (
-          <Card key={table.id} className="overflow-hidden hover:shadow-lg transition-shadow bg-gradient-to-b from-charcoal to-charcoal/90 border-t-4 border-t-primary border-b-4 border-b-primary">
+          <Card 
+            key={table.id} 
+            className="overflow-hidden hover:shadow-xl transition-all duration-300 bg-gradient-to-b from-stone-900 to-stone-800 border-0 rounded-2xl"
+          >
+            {/* Top accent bar */}
+            <div className="h-1.5 bg-primary" />
+            
             <CardContent className="p-6 text-center">
+              {/* Logo */}
+              <div className="mb-3">
+                <img 
+                  src={logoImage} 
+                  alt="Califorian" 
+                  className="h-8 mx-auto opacity-90"
+                />
+              </div>
+              
+              {/* Decorative divider */}
+              <div className="h-px bg-primary/40 mx-4 mb-4" />
+
               {/* QR Code */}
-              <div className="bg-white p-4 rounded-xl mb-4 inline-block shadow-md">
+              <div className="bg-white p-4 rounded-2xl mb-5 inline-block shadow-lg">
                 <QRCodeSVG
                   id={`qr-${table.table_number}`}
                   value={getOrderUrl(table.table_number)}
-                  size={160}
+                  size={150}
                   level="H"
-                  includeMargin
-                  fgColor="#1a1a1a"
+                  includeMargin={false}
+                  fgColor="#1C1917"
                   bgColor="#ffffff"
                   imageSettings={{
                     src: logoImage,
                     x: undefined,
                     y: undefined,
-                    height: 32,
-                    width: 32,
+                    height: 28,
+                    width: 28,
                     excavate: true,
                   }}
                 />
               </div>
 
-              {/* Brand text */}
-              <p className="text-xs font-bold text-primary tracking-widest mb-2">
-                CALIFORIAN RESTAURANT
-              </p>
-
-              {/* Table Info */}
-              <h3 className="text-2xl font-serif font-bold mb-1 text-cream">
-                {t("Table", "Masa")} {table.table_number}
+              {/* Table Number - Bilingual */}
+              <h3 className="text-3xl font-serif font-bold text-cream tracking-wide mb-1">
+                MASA {table.table_number}
               </h3>
-              <p className="text-sm text-muted-foreground mb-1">
-                {table.capacity} {t("seats", "kişilik")}
+              <p className="text-sm text-stone-400 tracking-wider mb-4">
+                TABLE {table.table_number}
               </p>
-              {table.location && (
-                <p className="text-xs text-muted-foreground mb-3">{table.location}</p>
-              )}
 
-              {/* Scan instruction */}
-              <p className="text-xs text-muted-foreground mb-4">
-                {t("Scan to view menu & order", "Menü ve sipariş için tarayın")}
-              </p>
+              {/* Capacity badge */}
+              <div className="inline-flex items-center gap-1 px-3 py-1 bg-stone-700/50 rounded-full mb-4">
+                <span className="text-xs text-stone-300">
+                  {table.capacity} {t("guests", "kişilik")}
+                </span>
+                {table.location && (
+                  <>
+                    <span className="text-stone-500">•</span>
+                    <span className="text-xs text-stone-400">{table.location}</span>
+                  </>
+                )}
+              </div>
+
+              {/* Scan instruction - Bilingual */}
+              <div className="mb-4 space-y-1">
+                <p className="text-sm font-semibold text-primary">
+                  Menü için QR'ı Tarayın
+                </p>
+                <p className="text-xs text-stone-500">
+                  Scan QR for Menu
+                </p>
+              </div>
 
               {/* Download Button */}
               <Button
                 variant="outline"
                 size="sm"
-                className="w-full"
+                className="w-full bg-transparent border-stone-600 hover:bg-stone-700 hover:border-stone-500"
                 onClick={() => downloadQRCode(table.table_number)}
               >
                 <Download className="h-4 w-4 mr-2" />
                 {t("Download PNG", "PNG İndir")}
               </Button>
             </CardContent>
+            
+            {/* Bottom accent bar */}
+            <div className="h-1.5 bg-primary" />
           </Card>
         ))}
       </div>
