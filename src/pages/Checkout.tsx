@@ -1,7 +1,7 @@
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { CreditCard, Banknote, ShoppingBag, CheckCircle2, UtensilsCrossed } from "lucide-react";
+import { CreditCard, Banknote, ShoppingBag, UtensilsCrossed } from "lucide-react";
 import Layout from "@/components/layout/Layout";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useCart } from "@/contexts/CartContext";
@@ -20,8 +20,6 @@ const Checkout = () => {
   const { items, tableNumber, getSubtotal, getTotal, clearCart } = useCart();
   
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [orderNumber, setOrderNumber] = useState<number | null>(null);
-  const [orderPlaced, setOrderPlaced] = useState(false);
   
   const [formData, setFormData] = useState({
     paymentMethod: "cash_at_table" as PaymentMethod,
@@ -84,10 +82,11 @@ const Checkout = () => {
 
       if (itemsError) throw itemsError;
 
-      setOrderNumber(orderData.order_number);
       clearCart();
-      setOrderPlaced(true);
       toast.success(t("Order placed successfully!", "Siparişiniz başarıyla alındı!"));
+      
+      // Auto-redirect to tracking page
+      navigate(`/order-tracking?table=${tableNumber}`);
     } catch (error) {
       console.error("Error placing order:", error);
       toast.error(t("Failed to place order. Please try again.", "Sipariş verilemedi. Lütfen tekrar deneyin."));
@@ -102,7 +101,7 @@ const Checkout = () => {
   ];
 
   // Redirect if no table number
-  if (!tableNumber && !orderPlaced) {
+  if (!tableNumber) {
     return (
       <Layout>
         <section className="min-h-[60vh] flex items-center justify-center">
@@ -123,7 +122,7 @@ const Checkout = () => {
     );
   }
 
-  if (items.length === 0 && !orderPlaced) {
+  if (items.length === 0) {
     return (
       <Layout>
         <section className="min-h-[60vh] flex items-center justify-center">
@@ -166,159 +165,101 @@ const Checkout = () => {
           <div className="grid lg:grid-cols-3 gap-8">
             {/* Form */}
             <div className="lg:col-span-2 space-y-8">
-              {/* Order Form */}
-              {!orderPlaced && (
-                <motion.div
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  className="space-y-6"
-                >
-                  {/* Payment Method */}
-                  <div className="bg-card p-6 rounded-2xl">
-                    <h2 className="font-serif text-2xl font-bold mb-6">
-                      {t("Payment Method", "Ödeme Yöntemi")}
-                    </h2>
-                    <RadioGroup
-                      value={formData.paymentMethod}
-                      onValueChange={(value) => updateFormData("paymentMethod", value)}
-                      className="space-y-4"
-                    >
-                      {paymentMethods.map((method) => (
-                        <div
-                          key={method.id}
-                          className={`flex items-center gap-4 p-4 rounded-xl border-2 transition-all cursor-pointer ${
-                            formData.paymentMethod === method.id
-                              ? "border-primary bg-primary/10"
-                              : "border-border hover:border-muted-foreground"
-                          }`}
-                          onClick={() => updateFormData("paymentMethod", method.id)}
-                        >
-                          <RadioGroupItem value={method.id} id={method.id} />
-                          <method.icon className={`w-6 h-6 ${
-                            formData.paymentMethod === method.id ? "text-primary" : "text-muted-foreground"
-                          }`} />
-                          <Label htmlFor={method.id} className="flex-1 cursor-pointer font-medium">
-                            {method.label}
-                          </Label>
-                        </div>
-                      ))}
-                    </RadioGroup>
-                  </div>
-
-                  {/* Order Notes */}
-                  <div className="bg-card p-6 rounded-2xl">
-                    <Label htmlFor="notes">{t("Order Notes", "Sipariş Notları")} ({t("Optional", "Opsiyonel")})</Label>
-                    <Textarea
-                      id="notes"
-                      value={formData.notes}
-                      onChange={(e) => updateFormData("notes", e.target.value)}
-                      placeholder={t("Any allergies or special requests?", "Alerji veya özel istek var mı?")}
-                      className="mt-2"
-                    />
-                  </div>
-
-                  <Button
-                    onClick={handleSubmit}
-                    disabled={isSubmitting}
-                    className="w-full h-14 text-lg bg-primary hover:bg-primary/90"
-                  >
-                    {isSubmitting ? t("Placing Order...", "Sipariş Veriliyor...") : t("Place Order", "Sipariş Ver")}
-                  </Button>
-                </motion.div>
-              )}
-
-              {/* Success */}
-              {orderPlaced && (
-                <motion.div
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  className="bg-card p-8 rounded-2xl text-center"
-                >
-                  <div className="w-20 h-20 bg-green-500/20 rounded-full flex items-center justify-center mx-auto mb-6">
-                    <CheckCircle2 className="w-10 h-10 text-green-500" />
-                  </div>
-                  <h2 className="font-serif text-3xl font-bold mb-4">
-                    {t("Order Confirmed!", "Sipariş Onaylandı!")}
+              <motion.div
+                initial={{ opacity: 0, x: -20 }}
+                animate={{ opacity: 1, x: 0 }}
+                className="space-y-6"
+              >
+                {/* Payment Method */}
+                <div className="bg-card p-6 rounded-2xl">
+                  <h2 className="font-serif text-2xl font-bold mb-6">
+                    {t("Payment Method", "Ödeme Yöntemi")}
                   </h2>
-                  <p className="text-muted-foreground mb-6">
-                    {t(
-                      "Your order has been sent to the kitchen!",
-                      "Siparişiniz mutfağa gönderildi!"
-                    )}
-                  </p>
-                  {orderNumber && (
-                    <div className="bg-secondary p-4 rounded-xl mb-6">
-                      <p className="text-sm text-muted-foreground mb-1">
-                        {t("Order Number", "Sipariş Numarası")}
-                      </p>
-                      <p className="text-3xl font-bold text-primary">#{orderNumber}</p>
-                    </div>
-                  )}
-                  <div className="bg-primary/10 p-4 rounded-xl mb-6">
-                    <p className="text-primary font-medium">
-                      {t(
-                        "Track your order status in real-time below!",
-                        "Sipariş durumunuzu aşağıdan anlık takip edin!"
-                      )}
-                    </p>
-                  </div>
-                  <div className="space-y-3">
-                    <Button 
-                      onClick={() => navigate(`/order-tracking?order=${orderNumber}`)} 
-                      className="w-full bg-primary hover:bg-primary/90"
-                    >
-                      {t("Track Order Status", "Sipariş Durumunu Takip Et")}
-                    </Button>
-                    <Button 
-                      variant="outline" 
-                      onClick={() => navigate("/order")} 
-                      className="w-full"
-                    >
-                      {t("Order More", "Daha Fazla Sipariş Ver")}
-                    </Button>
-                  </div>
-                </motion.div>
-              )}
+                  <RadioGroup
+                    value={formData.paymentMethod}
+                    onValueChange={(value) => updateFormData("paymentMethod", value)}
+                    className="space-y-4"
+                  >
+                    {paymentMethods.map((method) => (
+                      <div
+                        key={method.id}
+                        className={`flex items-center gap-4 p-4 rounded-xl border-2 transition-all cursor-pointer ${
+                          formData.paymentMethod === method.id
+                            ? "border-primary bg-primary/10"
+                            : "border-border hover:border-muted-foreground"
+                        }`}
+                        onClick={() => updateFormData("paymentMethod", method.id)}
+                      >
+                        <RadioGroupItem value={method.id} id={method.id} />
+                        <method.icon className={`w-6 h-6 ${
+                          formData.paymentMethod === method.id ? "text-primary" : "text-muted-foreground"
+                        }`} />
+                        <Label htmlFor={method.id} className="flex-1 cursor-pointer font-medium">
+                          {method.label}
+                        </Label>
+                      </div>
+                    ))}
+                  </RadioGroup>
+                </div>
+
+                {/* Order Notes */}
+                <div className="bg-card p-6 rounded-2xl">
+                  <Label htmlFor="notes">{t("Order Notes", "Sipariş Notları")} ({t("Optional", "Opsiyonel")})</Label>
+                  <Textarea
+                    id="notes"
+                    value={formData.notes}
+                    onChange={(e) => updateFormData("notes", e.target.value)}
+                    placeholder={t("Any allergies or special requests?", "Alerji veya özel istek var mı?")}
+                    className="mt-2"
+                  />
+                </div>
+
+                <Button
+                  onClick={handleSubmit}
+                  disabled={isSubmitting}
+                  className="w-full h-14 text-lg bg-primary hover:bg-primary/90"
+                >
+                  {isSubmitting ? t("Placing Order...", "Sipariş Veriliyor...") : t("Place Order", "Sipariş Ver")}
+                </Button>
+              </motion.div>
             </div>
 
             {/* Order Summary */}
-            {!orderPlaced && (
-              <div className="lg:col-span-1">
-                <div className="bg-card p-6 rounded-2xl sticky top-32">
-                  <h3 className="font-serif text-xl font-bold mb-4">
-                    {t("Order Summary", "Sipariş Özeti")}
-                  </h3>
-                  
-                  {/* Table Info */}
-                  <div className="flex items-center gap-2 mb-4 pb-4 border-b border-border">
-                    <UtensilsCrossed className="w-5 h-5 text-primary" />
-                    <span className="font-medium">{t("Table", "Masa")} {tableNumber}</span>
-                  </div>
+            <div className="lg:col-span-1">
+              <div className="bg-card p-6 rounded-2xl sticky top-32">
+                <h3 className="font-serif text-xl font-bold mb-4">
+                  {t("Order Summary", "Sipariş Özeti")}
+                </h3>
+                
+                {/* Table Info */}
+                <div className="flex items-center gap-2 mb-4 pb-4 border-b border-border">
+                  <UtensilsCrossed className="w-5 h-5 text-primary" />
+                  <span className="font-medium">{t("Table", "Masa")} {tableNumber}</span>
+                </div>
 
-                  {/* Items */}
-                  <div className="space-y-3 mb-4 max-h-48 overflow-y-auto">
-                    {items.map((item) => (
-                      <div key={item.id} className="flex justify-between text-sm">
-                        <span className="text-muted-foreground">
-                          {item.quantity}x {language === "en" ? item.name : item.nameTr || item.name}
-                        </span>
-                        <span className="font-medium">
-                          ₺{((item.price + item.modifiers.reduce((sum, m) => sum + m.priceAdjustment, 0)) * item.quantity).toFixed(2)}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
-
-                  {/* Totals */}
-                  <div className="border-t border-border pt-4">
-                    <div className="flex justify-between text-lg font-bold">
-                      <span>{t("Total", "Toplam")}</span>
-                      <span className="text-primary">₺{getTotal().toFixed(2)}</span>
+                {/* Items */}
+                <div className="space-y-3 mb-4 max-h-48 overflow-y-auto">
+                  {items.map((item) => (
+                    <div key={item.id} className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">
+                        {item.quantity}x {language === "en" ? item.name : item.nameTr || item.name}
+                      </span>
+                      <span className="font-medium">
+                        ₺{((item.price + item.modifiers.reduce((sum, m) => sum + m.priceAdjustment, 0)) * item.quantity).toFixed(2)}
+                      </span>
                     </div>
+                  ))}
+                </div>
+
+                {/* Totals */}
+                <div className="border-t border-border pt-4">
+                  <div className="flex justify-between text-lg font-bold">
+                    <span>{t("Total", "Toplam")}</span>
+                    <span className="text-primary">₺{getTotal().toFixed(2)}</span>
                   </div>
                 </div>
               </div>
-            )}
+            </div>
           </div>
         </div>
       </section>
