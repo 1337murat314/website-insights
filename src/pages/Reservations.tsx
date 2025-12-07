@@ -7,7 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Calendar, Clock, Users, MapPin, Check, Loader2 } from "lucide-react";
+import { Calendar, Clock, Users, MapPin, Check, Loader2, Armchair } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
 
@@ -21,6 +21,7 @@ const Reservations = () => {
     date: "",
     time: "",
     guests: "",
+    seatingPreference: "",
     name: "",
     email: "",
     phone: "",
@@ -34,6 +35,12 @@ const Reservations = () => {
   ];
 
   const guestOptions = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10+"];
+
+  const seatingOptions = [
+    { value: "inside", labelEn: "Inside", labelTr: "İç Mekan" },
+    { value: "outside", labelEn: "Outside / Terrace", labelTr: "Dış Mekan / Teras" },
+    { value: "no_preference", labelEn: "No Preference", labelTr: "Fark Etmez" },
+  ];
 
   const sendWhatsAppConfirmation = async (phone: string, name: string, date: string, time: string, guests: string, branch: string) => {
     try {
@@ -63,6 +70,12 @@ const Reservations = () => {
 
     const partySize = formData.guests === "10+" ? 10 : parseInt(formData.guests);
 
+    // Build special requests with seating preference
+    const seatingLabel = seatingOptions.find((o) => o.value === formData.seatingPreference)?.labelEn || "";
+    const specialRequestsWithSeating = seatingLabel 
+      ? `[Seating: ${seatingLabel}]${formData.specialRequests ? ` ${formData.specialRequests}` : ""}`
+      : formData.specialRequests || null;
+
     const { error } = await supabase.from("reservations").insert({
       guest_name: formData.name,
       guest_email: formData.email,
@@ -70,7 +83,7 @@ const Reservations = () => {
       party_size: partySize,
       reservation_date: formData.date,
       reservation_time: formData.time,
-      special_requests: formData.specialRequests || null,
+      special_requests: specialRequestsWithSeating,
       status: "pending",
     });
 
@@ -113,7 +126,7 @@ const Reservations = () => {
     setFormData((prev) => ({ ...prev, [field]: value }));
   };
 
-  const canProceedStep1 = formData.branch && formData.date && formData.time && formData.guests;
+  const canProceedStep1 = formData.branch && formData.date && formData.time && formData.guests && formData.seatingPreference;
   const canProceedStep2 = formData.name && formData.email && formData.phone;
 
   return (
@@ -246,6 +259,26 @@ const Reservations = () => {
                   </div>
                 </div>
 
+                {/* Seating Preference */}
+                <div className="space-y-2">
+                  <Label className="flex items-center gap-2">
+                    <Armchair size={16} className="text-primary" />
+                    {t("Seating Preference", "Oturma Tercihi")}
+                  </Label>
+                  <Select value={formData.seatingPreference} onValueChange={(v) => updateFormData("seatingPreference", v)}>
+                    <SelectTrigger>
+                      <SelectValue placeholder={t("Select preference", "Tercih seçin")} />
+                    </SelectTrigger>
+                    <SelectContent>
+                      {seatingOptions.map((option) => (
+                        <SelectItem key={option.value} value={option.value}>
+                          {t(option.labelEn, option.labelTr)}
+                        </SelectItem>
+                      ))}
+                    </SelectContent>
+                  </Select>
+                </div>
+
                 <Button
                   onClick={() => setStep(2)}
                   disabled={!canProceedStep1}
@@ -346,6 +379,15 @@ const Reservations = () => {
                     <span className="font-medium text-foreground">{t("Guests:", "Kişi:")}</span> {formData.guests}
                   </p>
                   <p className="text-sm text-muted-foreground">
+                    <span className="font-medium text-foreground">{t("Seating:", "Oturma:")}</span>{" "}
+                    {seatingOptions.find((o) => o.value === formData.seatingPreference)
+                      ? t(
+                          seatingOptions.find((o) => o.value === formData.seatingPreference)!.labelEn,
+                          seatingOptions.find((o) => o.value === formData.seatingPreference)!.labelTr
+                        )
+                      : ""}
+                  </p>
+                  <p className="text-sm text-muted-foreground">
                     <span className="font-medium text-foreground">{t("Name:", "Ad:")}</span> {formData.name}
                   </p>
                 </div>
@@ -396,6 +438,7 @@ const Reservations = () => {
                       date: "",
                       time: "",
                       guests: "",
+                      seatingPreference: "",
                       name: "",
                       email: "",
                       phone: "",
