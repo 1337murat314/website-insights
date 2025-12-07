@@ -4,6 +4,13 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Badge } from "@/components/ui/badge";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import {
+  Dialog,
+  DialogContent,
+  DialogHeader,
+  DialogTitle,
+  DialogFooter,
+} from "@/components/ui/dialog";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -22,7 +29,11 @@ import {
   VolumeX,
   Maximize,
   Minimize,
-  RefreshCw
+  RefreshCw,
+  Receipt,
+  CreditCard,
+  Banknote,
+  X
 } from "lucide-react";
 import { format } from "date-fns";
 
@@ -36,6 +47,7 @@ interface Order {
   created_at: string;
   notes: string | null;
   order_type: string;
+  payment_method: string;
   items: OrderItem[];
 }
 
@@ -44,6 +56,8 @@ interface OrderItem {
   item_name: string;
   item_name_tr: string | null;
   quantity: number;
+  unit_price: number;
+  total_price: number;
   special_instructions: string | null;
   modifiers: any;
 }
@@ -56,12 +70,23 @@ interface TableInfo {
   location: string | null;
 }
 
+interface LiveTable {
+  tableNumber: string;
+  orders: Order[];
+  totalAmount: number;
+  hasReadyOrders: boolean;
+  hasServedOrders: boolean;
+  allServed: boolean;
+}
+
 const AdminWaiter = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [tables, setTables] = useState<TableInfo[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
+  const [selectedTable, setSelectedTable] = useState<LiveTable | null>(null);
+  const [showBillDialog, setShowBillDialog] = useState(false);
   const { toast } = useToast();
   const { t, language } = useLanguage();
 
@@ -149,14 +174,41 @@ const AdminWaiter = () => {
 
     if (error) {
       toast({ title: t("Error", "Hata"), description: error.message, variant: "destructive" });
-    } else {
-      toast({ title: t("Success", "Başarılı"), description: t("Order updated", "Sipariş güncellendi") });
+      return false;
+    }
+    return true;
+  };
+
+  const markAsServed = async (orderId: string) => {
+    const success = await updateOrderStatus(orderId, "served");
+    if (success) {
+      toast({ title: t("Success", "Başarılı"), description: t("Order marked as served", "Sipariş servis edildi olarak işaretlendi") });
       fetchOrders();
     }
   };
 
-  const markAsServed = async (orderId: string) => {
-    await updateOrderStatus(orderId, "completed");
+  const closeTable = async (tableNumber: string) => {
+    // Get all orders for this table that are not completed
+    const tableOrders = orders.filter(
+      o => o.table_number === tableNumber && !["completed", "cancelled"].includes(o.status)
+    );
+
+    // Mark all as completed
+    for (const order of tableOrders) {
+      await supabase
+        .from("orders")
+        .update({ status: "completed" })
+        .eq("id", order.id);
+    }
+
+    toast({ 
+      title: t("Table Closed", "Masa Kapatıldı"), 
+      description: t(`Table ${tableNumber} has been closed`, `Masa ${tableNumber} kapatıldı`) 
+    });
+    
+    setShowBillDialog(false);
+    setSelectedTable(null);
+    fetchOrders();
   };
 
   const toggleFullscreen = () => {
@@ -175,20 +227,64 @@ const AdminWaiter = () => {
       accepted: { color: "bg-yellow-500/10 text-yellow-500 border-yellow-500/30", label: t("Accepted", "Kabul Edildi") },
       preparing: { color: "bg-orange-500/10 text-orange-500 border-orange-500/30", label: t("Preparing", "Hazırlanıyor") },
       ready: { color: "bg-green-500/10 text-green-500 border-green-500/30", label: t("Ready", "Hazır") },
+      served: { color: "bg-purple-500/10 text-purple-500 border-purple-500/30", label: t("Served", "Servis Edildi") },
       completed: { color: "bg-gray-500/10 text-gray-500 border-gray-500/30", label: t("Completed", "Tamamlandı") },
     };
     const config = statusConfig[status] || statusConfig.new;
     return <Badge className={config.color}>{config.label}</Badge>;
   };
 
+  // Get live tables - tables with ongoing orders (not completed)
+  const getLiveTables = (): LiveTable[] => {
+    const tableMap = new Map<string, Order[]>();
+    
+    // Group orders by table (only non-completed orders)
+    orders
+      .filter(o => o.table_number && !["completed", "cancelled"].includes(o.status))
+      .forEach(order => {
+        const tableNum = order.table_number!;
+        if (!tableMap.has(tableNum)) {
+          tableMap.set(tableNum, []);
+        }
+        tableMap.get(tableNum)!.push(order);
+      });
+
+    // Convert to LiveTable objects
+    const liveTables: LiveTable[] = [];
+    tableMap.forEach((tableOrders, tableNumber) => {
+      const totalAmount = tableOrders.reduce((sum, o) => sum + o.total, 0);
+      const hasReadyOrders = tableOrders.some(o => o.status === "ready");
+      const hasServedOrders = tableOrders.some(o => o.status === "served");
+      const allServed = tableOrders.every(o => o.status === "served");
+      
+      liveTables.push({
+        tableNumber,
+        orders: tableOrders,
+        totalAmount,
+        hasReadyOrders,
+        hasServedOrders,
+        allServed
+      });
+    });
+
+    // Sort by table number
+    return liveTables.sort((a, b) => a.tableNumber.localeCompare(b.tableNumber, undefined, { numeric: true }));
+  };
+
+  const liveTables = getLiveTables();
+
   // Filter orders by status
   const readyOrders = orders.filter(o => o.status === "ready");
   const activeOrders = orders.filter(o => ["new", "accepted", "preparing"].includes(o.status));
-  const myTableOrders = orders.filter(o => o.table_number && ["new", "accepted", "preparing", "ready"].includes(o.status));
 
   // Stats
-  const totalActiveOrders = activeOrders.length + readyOrders.length;
-  const tablesWithOrders = new Set(orders.filter(o => o.table_number && o.status !== "completed").map(o => o.table_number)).size;
+  const totalActiveOrders = orders.filter(o => !["completed", "cancelled"].includes(o.status)).length;
+  const tablesWaitingPayment = liveTables.filter(t => t.allServed).length;
+
+  const handleTableClick = (liveTable: LiveTable) => {
+    setSelectedTable(liveTable);
+    setShowBillDialog(true);
+  };
 
   return (
     <div className="space-y-6">
@@ -248,40 +344,97 @@ const AdminWaiter = () => {
               <TableProperties className="h-6 w-6 text-orange-500" />
             </div>
             <div>
-              <p className="text-2xl font-bold">{tablesWithOrders}</p>
-              <p className="text-sm text-muted-foreground">{t("Active Tables", "Aktif Masalar")}</p>
+              <p className="text-2xl font-bold">{liveTables.length}</p>
+              <p className="text-sm text-muted-foreground">{t("Live Tables", "Aktif Masalar")}</p>
             </div>
           </CardContent>
         </Card>
         <Card className="border-border/50">
           <CardContent className="p-4 flex items-center gap-4">
             <div className="w-12 h-12 rounded-lg bg-purple-500/10 flex items-center justify-center">
-              <Users className="h-6 w-6 text-purple-500" />
+              <Receipt className="h-6 w-6 text-purple-500" />
             </div>
             <div>
-              <p className="text-2xl font-bold">{tables.filter(t => !t.is_available).length}</p>
-              <p className="text-sm text-muted-foreground">{t("Occupied Tables", "Dolu Masalar")}</p>
+              <p className="text-2xl font-bold">{tablesWaitingPayment}</p>
+              <p className="text-sm text-muted-foreground">{t("Awaiting Payment", "Ödeme Bekliyor")}</p>
             </div>
           </CardContent>
         </Card>
       </div>
 
       {/* Main Content */}
-      <Tabs defaultValue="ready" className="space-y-4">
+      <Tabs defaultValue="live" className="space-y-4">
         <TabsList className="grid w-full grid-cols-3">
+          <TabsTrigger value="live" className="flex items-center gap-2">
+            <TableProperties className="h-4 w-4" />
+            {t("Live Tables", "Aktif Masalar")} ({liveTables.length})
+          </TabsTrigger>
           <TabsTrigger value="ready" className="flex items-center gap-2">
             <Bell className="h-4 w-4" />
             {t("Ready to Serve", "Servise Hazır")} ({readyOrders.length})
-          </TabsTrigger>
-          <TabsTrigger value="tables" className="flex items-center gap-2">
-            <TableProperties className="h-4 w-4" />
-            {t("Table Orders", "Masa Siparişleri")} ({myTableOrders.length})
           </TabsTrigger>
           <TabsTrigger value="kitchen" className="flex items-center gap-2">
             <ChefHat className="h-4 w-4" />
             {t("In Kitchen", "Mutfakta")} ({activeOrders.length})
           </TabsTrigger>
         </TabsList>
+
+        {/* Live Tables */}
+        <TabsContent value="live" className="space-y-4">
+          {liveTables.length === 0 ? (
+            <Card>
+              <CardContent className="p-8 text-center text-muted-foreground">
+                <TableProperties className="h-12 w-12 mx-auto mb-4 opacity-50" />
+                <p>{t("No active tables", "Aktif masa yok")}</p>
+              </CardContent>
+            </Card>
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
+              {liveTables.map((liveTable, index) => (
+                <motion.div
+                  key={liveTable.tableNumber}
+                  initial={{ opacity: 0, scale: 0.95 }}
+                  animate={{ opacity: 1, scale: 1 }}
+                  transition={{ delay: index * 0.05 }}
+                >
+                  <Card 
+                    className={`cursor-pointer transition-all hover:scale-105 ${
+                      liveTable.allServed 
+                        ? "border-purple-500 bg-purple-500/10" 
+                        : liveTable.hasReadyOrders 
+                          ? "border-green-500 bg-green-500/10 animate-pulse" 
+                          : "border-orange-500/50 bg-orange-500/5"
+                    }`}
+                    onClick={() => handleTableClick(liveTable)}
+                  >
+                    <CardContent className="p-4 text-center">
+                      <div className="text-3xl font-bold mb-1">{liveTable.tableNumber}</div>
+                      <div className="text-xs text-muted-foreground mb-2">
+                        {liveTable.orders.length} {t("order(s)", "sipariş")}
+                      </div>
+                      <div className="text-lg font-semibold">₺{liveTable.totalAmount.toFixed(2)}</div>
+                      <div className="mt-2">
+                        {liveTable.allServed ? (
+                          <Badge className="bg-purple-500/20 text-purple-500 border-purple-500/30">
+                            {t("Awaiting Bill", "Hesap Bekliyor")}
+                          </Badge>
+                        ) : liveTable.hasReadyOrders ? (
+                          <Badge className="bg-green-500/20 text-green-500 border-green-500/30">
+                            {t("Ready", "Hazır")}
+                          </Badge>
+                        ) : (
+                          <Badge className="bg-orange-500/20 text-orange-500 border-orange-500/30">
+                            {t("In Progress", "Hazırlanıyor")}
+                          </Badge>
+                        )}
+                      </div>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              ))}
+            </div>
+          )}
+        </TabsContent>
 
         {/* Ready to Serve */}
         <TabsContent value="ready" className="space-y-4">
@@ -341,74 +494,8 @@ const AdminWaiter = () => {
                         onClick={() => markAsServed(order.id)}
                       >
                         <CheckCircle2 className="h-4 w-4 mr-2" />
-                        {t("Mark as Served", "Servis Edildi")}
+                        {t("Mark as Served", "Teslim Edildi")}
                       </Button>
-                    </CardContent>
-                  </Card>
-                </motion.div>
-              ))}
-            </div>
-          )}
-        </TabsContent>
-
-        {/* Table Orders */}
-        <TabsContent value="tables" className="space-y-4">
-          {myTableOrders.length === 0 ? (
-            <Card>
-              <CardContent className="p-8 text-center text-muted-foreground">
-                <TableProperties className="h-12 w-12 mx-auto mb-4 opacity-50" />
-                <p>{t("No active table orders", "Aktif masa siparişi yok")}</p>
-              </CardContent>
-            </Card>
-          ) : (
-            <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
-              {myTableOrders.map((order, index) => (
-                <motion.div
-                  key={order.id}
-                  initial={{ opacity: 0, y: 10 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.05 }}
-                >
-                  <Card className="border-border/50">
-                    <CardHeader className="pb-2">
-                      <div className="flex items-center justify-between">
-                        <CardTitle className="text-lg flex items-center gap-2">
-                          <TableProperties className="h-5 w-5" />
-                          {t("Table", "Masa")} {order.table_number}
-                        </CardTitle>
-                        {getStatusBadge(order.status)}
-                      </div>
-                      <p className="text-sm text-muted-foreground">
-                        <Clock className="inline h-3 w-3 mr-1" />
-                        {format(new Date(order.created_at), "HH:mm")} - #{order.order_number}
-                      </p>
-                    </CardHeader>
-                    <CardContent className="space-y-3">
-                      <div className="space-y-1">
-                        {order.items.map((item) => (
-                          <div key={item.id} className="text-sm">
-                            <div className="flex justify-between">
-                              <span>{item.quantity}x {language === "tr" && item.item_name_tr ? item.item_name_tr : item.item_name}</span>
-                            </div>
-                            {item.special_instructions && (
-                              <p className="text-xs text-muted-foreground ml-4">→ {item.special_instructions}</p>
-                            )}
-                          </div>
-                        ))}
-                      </div>
-                      <div className="flex justify-between items-center pt-2 border-t border-border/50">
-                        <span className="font-semibold">{t("Total", "Toplam")}</span>
-                        <span className="font-bold">₺{order.total.toFixed(2)}</span>
-                      </div>
-                      {order.status === "ready" && (
-                        <Button 
-                          className="w-full" 
-                          onClick={() => markAsServed(order.id)}
-                        >
-                          <CheckCircle2 className="h-4 w-4 mr-2" />
-                          {t("Mark as Served", "Servis Edildi")}
-                        </Button>
-                      )}
                     </CardContent>
                   </Card>
                 </motion.div>
@@ -453,8 +540,6 @@ const AdminWaiter = () => {
                       <div className="flex items-center gap-2 text-sm text-muted-foreground">
                         <Timer className="h-3 w-3" />
                         <span>{format(new Date(order.created_at), "HH:mm")}</span>
-                        <span>•</span>
-                        <span className="capitalize">{order.order_type}</span>
                       </div>
                     </CardHeader>
                     <CardContent className="space-y-2">
@@ -479,61 +564,105 @@ const AdminWaiter = () => {
         </TabsContent>
       </Tabs>
 
-      {/* Quick Table Status */}
-      <Card className="border-border/50">
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <TableProperties className="h-5 w-5" />
-            {t("Table Overview", "Masa Durumu")}
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <div className="grid grid-cols-4 sm:grid-cols-6 md:grid-cols-8 lg:grid-cols-10 gap-2">
-            {tables.map((table) => {
-              const hasOrder = orders.some(o => o.table_number === table.table_number && o.status !== "completed");
-              const hasReadyOrder = orders.some(o => o.table_number === table.table_number && o.status === "ready");
-              
-              return (
-                <div
-                  key={table.id}
-                  className={`
-                    aspect-square rounded-lg flex flex-col items-center justify-center text-sm font-medium border-2 transition-all
-                    ${hasReadyOrder 
-                      ? "bg-green-500/20 border-green-500 text-green-500 animate-pulse" 
-                      : hasOrder 
-                        ? "bg-orange-500/10 border-orange-500/50 text-orange-500" 
-                        : table.is_available 
-                          ? "bg-muted/30 border-border text-muted-foreground" 
-                          : "bg-red-500/10 border-red-500/50 text-red-500"
-                    }
-                  `}
-                >
-                  <span className="text-lg font-bold">{table.table_number}</span>
-                  <span className="text-xs">{table.capacity}p</span>
+      {/* Bill Dialog */}
+      <Dialog open={showBillDialog} onOpenChange={setShowBillDialog}>
+        <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-xl">
+              <TableProperties className="h-5 w-5" />
+              {t("Table", "Masa")} {selectedTable?.tableNumber} - {t("Bill", "Hesap")}
+            </DialogTitle>
+          </DialogHeader>
+          
+          {selectedTable && (
+            <div className="space-y-4">
+              {/* Orders List */}
+              {selectedTable.orders.map((order) => (
+                <Card key={order.id} className="border-border/50">
+                  <CardHeader className="py-3">
+                    <div className="flex items-center justify-between">
+                      <span className="font-medium">#{order.order_number}</span>
+                      <div className="flex items-center gap-2">
+                        {getStatusBadge(order.status)}
+                        <span className="text-xs text-muted-foreground">
+                          {format(new Date(order.created_at), "HH:mm")}
+                        </span>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="py-2 space-y-2">
+                    {order.items.map((item) => (
+                      <div key={item.id} className="flex justify-between text-sm">
+                        <span>
+                          {item.quantity}x {language === "tr" && item.item_name_tr ? item.item_name_tr : item.item_name}
+                        </span>
+                        <span className="font-medium">₺{item.total_price.toFixed(2)}</span>
+                      </div>
+                    ))}
+                    <div className="flex justify-between pt-2 border-t border-border/50 font-medium">
+                      <span>{t("Order Total", "Sipariş Toplamı")}</span>
+                      <span>₺{order.total.toFixed(2)}</span>
+                    </div>
+                    
+                    {/* Mark as served button for ready orders */}
+                    {order.status === "ready" && (
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="w-full mt-2"
+                        onClick={() => markAsServed(order.id)}
+                      >
+                        <CheckCircle2 className="h-4 w-4 mr-2" />
+                        {t("Mark as Served", "Teslim Edildi")}
+                      </Button>
+                    )}
+                  </CardContent>
+                </Card>
+              ))}
+
+              {/* Grand Total */}
+              <div className="bg-muted/50 rounded-lg p-4">
+                <div className="flex justify-between items-center text-lg font-bold">
+                  <span>{t("Grand Total", "Genel Toplam")}</span>
+                  <span>₺{selectedTable.totalAmount.toFixed(2)}</span>
                 </div>
-              );
-            })}
-          </div>
-          <div className="flex flex-wrap gap-4 mt-4 text-sm">
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 rounded bg-muted/30 border border-border" />
-              <span className="text-muted-foreground">{t("Available", "Müsait")}</span>
+                <div className="flex items-center gap-2 mt-2 text-sm text-muted-foreground">
+                  <Receipt className="h-4 w-4" />
+                  <span>{selectedTable.orders.length} {t("order(s)", "sipariş")}</span>
+                  <span>•</span>
+                  <span>
+                    {selectedTable.orders[0]?.payment_method === "cash" ? (
+                      <span className="flex items-center gap-1">
+                        <Banknote className="h-3 w-3" /> {t("Cash", "Nakit")}
+                      </span>
+                    ) : (
+                      <span className="flex items-center gap-1">
+                        <CreditCard className="h-3 w-3" /> {t("Card", "Kart")}
+                      </span>
+                    )}
+                  </span>
+                </div>
+              </div>
             </div>
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 rounded bg-orange-500/10 border border-orange-500/50" />
-              <span className="text-muted-foreground">{t("Has Order", "Siparişli")}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 rounded bg-green-500/20 border border-green-500" />
-              <span className="text-muted-foreground">{t("Ready to Serve", "Servise Hazır")}</span>
-            </div>
-            <div className="flex items-center gap-2">
-              <div className="w-4 h-4 rounded bg-red-500/10 border border-red-500/50" />
-              <span className="text-muted-foreground">{t("Occupied", "Dolu")}</span>
-            </div>
-          </div>
-        </CardContent>
-      </Card>
+          )}
+
+          <DialogFooter className="flex-col sm:flex-row gap-2">
+            <Button variant="outline" onClick={() => setShowBillDialog(false)} className="flex-1">
+              <X className="h-4 w-4 mr-2" />
+              {t("Close", "Kapat")}
+            </Button>
+            {selectedTable?.allServed && (
+              <Button 
+                onClick={() => closeTable(selectedTable.tableNumber)}
+                className="flex-1 bg-green-600 hover:bg-green-700"
+              >
+                <CheckCircle2 className="h-4 w-4 mr-2" />
+                {t("Payment Received - Close Table", "Ödeme Alındı - Masayı Kapat")}
+              </Button>
+            )}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };
