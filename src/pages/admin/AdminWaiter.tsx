@@ -414,9 +414,9 @@ const AdminWaiter = () => {
                       </div>
                       <div className="text-lg font-semibold">₺{liveTable.totalAmount.toFixed(2)}</div>
                       <div className="mt-2">
-                        {liveTable.allServed ? (
+                        {liveTable.hasServedOrders ? (
                           <Badge className="bg-purple-500/20 text-purple-500 border-purple-500/30">
-                            {t("Awaiting Bill", "Hesap Bekliyor")}
+                            {t("Served", "Servis Edildi")}
                           </Badge>
                         ) : liveTable.hasReadyOrders ? (
                           <Badge className="bg-green-500/20 text-green-500 border-green-500/30">
