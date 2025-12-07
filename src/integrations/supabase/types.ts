@@ -235,6 +235,208 @@ export type Database = {
           },
         ]
       }
+      modifier_groups: {
+        Row: {
+          created_at: string
+          id: string
+          is_required: boolean | null
+          max_selections: number | null
+          menu_item_id: string | null
+          min_selections: number | null
+          name: string
+          name_tr: string | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_required?: boolean | null
+          max_selections?: number | null
+          menu_item_id?: string | null
+          min_selections?: number | null
+          name: string
+          name_tr?: string | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_required?: boolean | null
+          max_selections?: number | null
+          menu_item_id?: string | null
+          min_selections?: number | null
+          name?: string
+          name_tr?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "modifier_groups_menu_item_id_fkey"
+            columns: ["menu_item_id"]
+            isOneToOne: false
+            referencedRelation: "menu_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      modifiers: {
+        Row: {
+          created_at: string
+          id: string
+          is_available: boolean | null
+          modifier_group_id: string
+          name: string
+          name_tr: string | null
+          price_adjustment: number | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_available?: boolean | null
+          modifier_group_id: string
+          name: string
+          name_tr?: string | null
+          price_adjustment?: number | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_available?: boolean | null
+          modifier_group_id?: string
+          name?: string
+          name_tr?: string | null
+          price_adjustment?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "modifiers_modifier_group_id_fkey"
+            columns: ["modifier_group_id"]
+            isOneToOne: false
+            referencedRelation: "modifier_groups"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      order_items: {
+        Row: {
+          created_at: string
+          id: string
+          item_name: string
+          item_name_tr: string | null
+          menu_item_id: string | null
+          modifiers: Json | null
+          order_id: string
+          quantity: number
+          special_instructions: string | null
+          total_price: number
+          unit_price: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          item_name: string
+          item_name_tr?: string | null
+          menu_item_id?: string | null
+          modifiers?: Json | null
+          order_id: string
+          quantity?: number
+          special_instructions?: string | null
+          total_price: number
+          unit_price: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          item_name?: string
+          item_name_tr?: string | null
+          menu_item_id?: string | null
+          modifiers?: Json | null
+          order_id?: string
+          quantity?: number
+          special_instructions?: string | null
+          total_price?: number
+          unit_price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_items_menu_item_id_fkey"
+            columns: ["menu_item_id"]
+            isOneToOne: false
+            referencedRelation: "menu_items"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_items_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      orders: {
+        Row: {
+          created_at: string
+          customer_email: string | null
+          customer_name: string
+          customer_phone: string
+          delivery_address: string | null
+          delivery_notes: string | null
+          estimated_prep_time: number | null
+          id: string
+          notes: string | null
+          order_number: number
+          order_type: string
+          payment_method: string
+          pickup_time: string | null
+          status: string
+          subtotal: number
+          table_number: string | null
+          tax: number
+          total: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          customer_email?: string | null
+          customer_name: string
+          customer_phone: string
+          delivery_address?: string | null
+          delivery_notes?: string | null
+          estimated_prep_time?: number | null
+          id?: string
+          notes?: string | null
+          order_number?: number
+          order_type: string
+          payment_method: string
+          pickup_time?: string | null
+          status?: string
+          subtotal?: number
+          table_number?: string | null
+          tax?: number
+          total?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          customer_email?: string | null
+          customer_name?: string
+          customer_phone?: string
+          delivery_address?: string | null
+          delivery_notes?: string | null
+          estimated_prep_time?: number | null
+          id?: string
+          notes?: string | null
+          order_number?: number
+          order_type?: string
+          payment_method?: string
+          pickup_time?: string | null
+          status?: string
+          subtotal?: number
+          table_number?: string | null
+          tax?: number
+          total?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       profiles: {
         Row: {
           avatar_url: string | null
