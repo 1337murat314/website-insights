@@ -18,6 +18,8 @@ import {
   RefreshCw,
   Eye,
   X,
+  Volume2,
+  VolumeX,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -38,6 +40,7 @@ import {
   DialogTitle,
 } from "@/components/ui/dialog";
 import { toast } from "sonner";
+import { playNotificationSound } from "@/lib/notificationSound";
 
 interface OrderItem {
   id: string;
@@ -102,6 +105,22 @@ const AdminOrders = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const [soundEnabled, setSoundEnabled] = useState(() => {
+    const saved = localStorage.getItem("orderSoundEnabled");
+    return saved !== "false";
+  });
+
+  const toggleSound = () => {
+    const newValue = !soundEnabled;
+    setSoundEnabled(newValue);
+    localStorage.setItem("orderSoundEnabled", String(newValue));
+    if (newValue) {
+      playNotificationSound();
+      toast.success(t("Sound notifications enabled", "Ses bildirimleri açıldı"));
+    } else {
+      toast.info(t("Sound notifications disabled", "Ses bildirimleri kapatıldı"));
+    }
+  };
 
   useEffect(() => {
     fetchOrders();
@@ -115,10 +134,19 @@ const AdminOrders = () => {
         (payload) => {
           console.log("Order change received:", payload);
           if (payload.eventType === "INSERT") {
-            setOrders((prev) => [payload.new as Order, ...prev]);
-            toast.success(t("New order received!", "Yeni sipariş alındı!"));
-            // Play notification sound
-            new Audio("/notification.mp3").play().catch(() => {});
+            const newOrder = payload.new as Order;
+            setOrders((prev) => [newOrder, ...prev]);
+            toast.success(
+              t(
+                `New order #${newOrder.order_number} from Table ${newOrder.table_number || 'N/A'}!`,
+                `Yeni sipariş #${newOrder.order_number} - Masa ${newOrder.table_number || 'N/A'}!`
+              ),
+              { duration: 10000 }
+            );
+            // Play notification sound if enabled
+            if (soundEnabled) {
+              playNotificationSound();
+            }
           } else if (payload.eventType === "UPDATE") {
             setOrders((prev) =>
               prev.map((o) => (o.id === payload.new.id ? (payload.new as Order) : o))
@@ -133,7 +161,7 @@ const AdminOrders = () => {
     return () => {
       supabase.removeChannel(channel);
     };
-  }, []);
+  }, [soundEnabled]);
 
   const fetchOrders = async () => {
     try {
@@ -224,10 +252,21 @@ const AdminOrders = () => {
             {t("Manage incoming orders in real-time", "Gelen siparişleri gerçek zamanlı yönetin")}
           </p>
         </div>
-        <Button onClick={fetchOrders} variant="outline" className="gap-2">
-          <RefreshCw className="w-4 h-4" />
-          {t("Refresh", "Yenile")}
-        </Button>
+        <div className="flex gap-2">
+          <Button 
+            onClick={toggleSound} 
+            variant={soundEnabled ? "default" : "outline"}
+            className="gap-2"
+            title={soundEnabled ? t("Sound On", "Ses Açık") : t("Sound Off", "Ses Kapalı")}
+          >
+            {soundEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+            {soundEnabled ? t("Sound On", "Ses Açık") : t("Sound Off", "Ses Kapalı")}
+          </Button>
+          <Button onClick={fetchOrders} variant="outline" className="gap-2">
+            <RefreshCw className="w-4 h-4" />
+            {t("Refresh", "Yenile")}
+          </Button>
+        </div>
       </div>
 
       {/* Filters */}

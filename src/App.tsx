@@ -33,6 +33,7 @@ import AdminPromoCodes from "./pages/admin/AdminPromoCodes";
 import AdminEvents from "./pages/admin/AdminEvents";
 import AdminAuditLogs from "./pages/admin/AdminAuditLogs";
 import AdminOrders from "./pages/admin/AdminOrders";
+import AdminQRCodes from "./pages/admin/AdminQRCodes";
 
 const queryClient = new QueryClient();
 
@@ -62,6 +63,7 @@ const AnimatedRoutes = () => {
           <Route path="guests" element={<AdminGuests />} />
           <Route path="menu" element={<AdminMenu />} />
           <Route path="tables" element={<AdminTables />} />
+          <Route path="qr-codes" element={<AdminQRCodes />} />
           <Route path="promo-codes" element={<AdminPromoCodes />} />
           <Route path="events" element={<AdminEvents />} />
           <Route path="staff" element={<AdminStaff />} />
