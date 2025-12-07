@@ -1,6 +1,6 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { format } from "date-fns";
+import { format, startOfDay, endOfDay, subDays, isToday, isSameDay } from "date-fns";
 import {
   Package,
   Clock,
@@ -13,13 +13,16 @@ import {
   ShoppingBag,
   CreditCard,
   Banknote,
-  Filter,
   Search,
   RefreshCw,
   Eye,
-  X,
   Volume2,
   VolumeX,
+  Calendar,
+  TrendingUp,
+  Trash2,
+  History,
+  AlertTriangle,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -38,7 +41,20 @@ import {
   DialogContent,
   DialogHeader,
   DialogTitle,
+  DialogDescription,
+  DialogFooter,
 } from "@/components/ui/dialog";
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog";
+import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { toast } from "sonner";
 import { playNotificationSound } from "@/lib/notificationSound";
 
@@ -105,6 +121,10 @@ const AdminOrders = () => {
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
+  const [activeTab, setActiveTab] = useState<string>("today");
+  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [showClearDialog, setShowClearDialog] = useState(false);
+  const [clearingOrders, setClearingOrders] = useState(false);
   const [soundEnabled, setSoundEnabled] = useState(() => {
     const saved = localStorage.getItem("orderSoundEnabled");
     return saved !== "false";
@@ -215,22 +235,130 @@ const AdminOrders = () => {
     }
   };
 
+  const clearOrdersForDate = async (date: Date) => {
+    setClearingOrders(true);
+    try {
+      const start = startOfDay(date).toISOString();
+      const end = endOfDay(date).toISOString();
+      
+      // First get order IDs for this date
+      const { data: ordersToDelete, error: fetchError } = await supabase
+        .from("orders")
+        .select("id")
+        .gte("created_at", start)
+        .lte("created_at", end);
+      
+      if (fetchError) throw fetchError;
+      
+      if (ordersToDelete && ordersToDelete.length > 0) {
+        const orderIds = ordersToDelete.map(o => o.id);
+        
+        // Delete order items first
+        const { error: itemsError } = await supabase
+          .from("order_items")
+          .delete()
+          .in("order_id", orderIds);
+        
+        if (itemsError) throw itemsError;
+        
+        // Then delete orders
+        const { error: ordersError } = await supabase
+          .from("orders")
+          .delete()
+          .in("id", orderIds);
+        
+        if (ordersError) throw ordersError;
+        
+        // Update local state
+        setOrders(prev => prev.filter(o => !orderIds.includes(o.id)));
+        toast.success(t(`Cleared ${ordersToDelete.length} orders`, `${ordersToDelete.length} sipariş silindi`));
+      } else {
+        toast.info(t("No orders to clear for this date", "Bu tarih için silinecek sipariş yok"));
+      }
+    } catch (error) {
+      console.error("Error clearing orders:", error);
+      toast.error(t("Failed to clear orders", "Siparişler silinemedi"));
+    } finally {
+      setClearingOrders(false);
+      setShowClearDialog(false);
+    }
+  };
+
   const openOrderDetail = async (order: Order) => {
     setSelectedOrder(order);
     setIsDetailOpen(true);
     await fetchOrderItems(order.id);
   };
 
-  const filteredOrders = orders.filter((order) => {
-    const statusMatch = statusFilter === "all" || order.status === statusFilter;
-    const typeMatch = orderTypeFilter === "all" || order.order_type === orderTypeFilter;
-    const searchMatch =
-      !searchQuery ||
-      order.customer_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      order.customer_phone.includes(searchQuery) ||
-      order.order_number.toString().includes(searchQuery);
-    return statusMatch && typeMatch && searchMatch;
-  });
+  // Get unique dates from orders for history
+  const orderDates = useMemo(() => {
+    const dates = new Map<string, Date>();
+    orders.forEach(order => {
+      const date = startOfDay(new Date(order.created_at));
+      const key = date.toISOString();
+      if (!dates.has(key)) {
+        dates.set(key, date);
+      }
+    });
+    return Array.from(dates.values()).sort((a, b) => b.getTime() - a.getTime());
+  }, [orders]);
+
+  // Filter orders by date and other filters
+  const filteredOrders = useMemo(() => {
+    return orders.filter((order) => {
+      const orderDate = new Date(order.created_at);
+      
+      // Date filter based on active tab
+      let dateMatch = true;
+      if (activeTab === "today") {
+        dateMatch = isToday(orderDate);
+      } else if (activeTab === "history") {
+        dateMatch = isSameDay(orderDate, selectedDate);
+      }
+      
+      const statusMatch = statusFilter === "all" || order.status === statusFilter;
+      const typeMatch = orderTypeFilter === "all" || order.order_type === orderTypeFilter;
+      const searchMatch =
+        !searchQuery ||
+        order.customer_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+        order.customer_phone.includes(searchQuery) ||
+        order.order_number.toString().includes(searchQuery);
+      
+      return dateMatch && statusMatch && typeMatch && searchMatch;
+    });
+  }, [orders, activeTab, selectedDate, statusFilter, orderTypeFilter, searchQuery]);
+
+  // Calculate daily stats
+  const dailyStats = useMemo(() => {
+    const todayOrders = orders.filter(o => isToday(new Date(o.created_at)));
+    const completedOrders = todayOrders.filter(o => o.status === "completed");
+    const totalRevenue = completedOrders.reduce((sum, o) => sum + o.total, 0);
+    const totalOrders = todayOrders.length;
+    const avgOrderValue = completedOrders.length > 0 ? totalRevenue / completedOrders.length : 0;
+    
+    return {
+      totalOrders,
+      completedOrders: completedOrders.length,
+      totalRevenue,
+      avgOrderValue,
+      pendingOrders: todayOrders.filter(o => !["completed", "cancelled"].includes(o.status)).length,
+      cancelledOrders: todayOrders.filter(o => o.status === "cancelled").length,
+    };
+  }, [orders]);
+
+  // Stats for selected history date
+  const historyStats = useMemo(() => {
+    const dateOrders = orders.filter(o => isSameDay(new Date(o.created_at), selectedDate));
+    const completedOrders = dateOrders.filter(o => o.status === "completed");
+    const totalRevenue = completedOrders.reduce((sum, o) => sum + o.total, 0);
+    
+    return {
+      totalOrders: dateOrders.length,
+      completedOrders: completedOrders.length,
+      totalRevenue,
+      cancelledOrders: dateOrders.filter(o => o.status === "cancelled").length,
+    };
+  }, [orders, selectedDate]);
 
   const getNextStatus = (currentStatus: string): string | null => {
     const flow: Record<string, string> = {
@@ -260,186 +388,384 @@ const AdminOrders = () => {
             title={soundEnabled ? t("Sound On", "Ses Açık") : t("Sound Off", "Ses Kapalı")}
           >
             {soundEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
-            {soundEnabled ? t("Sound On", "Ses Açık") : t("Sound Off", "Ses Kapalı")}
           </Button>
           <Button onClick={fetchOrders} variant="outline" className="gap-2">
             <RefreshCw className="w-4 h-4" />
-            {t("Refresh", "Yenile")}
           </Button>
         </div>
       </div>
 
-      {/* Filters */}
-      <div className="flex flex-wrap gap-4">
-        <div className="relative flex-1 min-w-[200px]">
-          <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
-          <Input
-            placeholder={t("Search by name, phone, order #...", "İsim, telefon, sipariş no ile ara...")}
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10"
-          />
-        </div>
-        <Select value={statusFilter} onValueChange={setStatusFilter}>
-          <SelectTrigger className="w-[180px]">
-            <SelectValue placeholder={t("All Statuses", "Tüm Durumlar")} />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">{t("All Statuses", "Tüm Durumlar")}</SelectItem>
-            {Object.entries(statusConfig).map(([key, config]) => (
-              <SelectItem key={key} value={key}>
-                {language === "en" ? config.label : config.labelTr}
-              </SelectItem>
-            ))}
-          </SelectContent>
-        </Select>
-        <Select value={orderTypeFilter} onValueChange={setOrderTypeFilter}>
-          <SelectTrigger className="w-[150px]">
-            <SelectValue placeholder={t("All Types", "Tüm Tipler")} />
-          </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="all">{t("All Types", "Tüm Tipler")}</SelectItem>
-            <SelectItem value="dine-in">{t("Dine In", "Restoranda")}</SelectItem>
-            <SelectItem value="pickup">{t("Pickup", "Gel Al")}</SelectItem>
-            <SelectItem value="delivery">{t("Delivery", "Teslimat")}</SelectItem>
-          </SelectContent>
-        </Select>
-      </div>
+      {/* Tabs for Today / History */}
+      <Tabs value={activeTab} onValueChange={setActiveTab} className="w-full">
+        <TabsList className="grid w-full max-w-md grid-cols-2">
+          <TabsTrigger value="today" className="gap-2">
+            <Bell className="w-4 h-4" />
+            {t("Today", "Bugün")}
+            {dailyStats.pendingOrders > 0 && (
+              <Badge variant="destructive" className="ml-1">{dailyStats.pendingOrders}</Badge>
+            )}
+          </TabsTrigger>
+          <TabsTrigger value="history" className="gap-2">
+            <History className="w-4 h-4" />
+            {t("History", "Geçmiş")}
+          </TabsTrigger>
+        </TabsList>
 
-      {/* Stats */}
-      <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
-        {Object.entries(statusConfig).map(([key, config]) => {
-          const count = orders.filter((o) => o.status === key).length;
-          const StatusIcon = config.icon;
-          return (
-            <motion.div
-              key={key}
-              whileHover={{ scale: 1.02 }}
-              className={`p-4 rounded-xl ${config.color}/10 border border-${config.color}/20 cursor-pointer`}
-              onClick={() => setStatusFilter(statusFilter === key ? "all" : key)}
-            >
+        {/* Today Tab */}
+        <TabsContent value="today" className="space-y-6 mt-6">
+          {/* Daily Stats Summary */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="bg-card p-4 rounded-xl border border-border">
               <div className="flex items-center gap-2 mb-2">
-                <StatusIcon className={`w-5 h-5 ${config.color.replace("bg-", "text-")}`} />
-                <span className="text-sm font-medium">
-                  {language === "en" ? config.label : config.labelTr}
-                </span>
+                <ShoppingBag className="w-5 h-5 text-primary" />
+                <span className="text-sm text-muted-foreground">{t("Total Orders", "Toplam Sipariş")}</span>
               </div>
-              <p className="text-2xl font-bold">{count}</p>
-            </motion.div>
-          );
-        })}
-      </div>
+              <p className="text-3xl font-bold">{dailyStats.totalOrders}</p>
+            </div>
+            <div className="bg-card p-4 rounded-xl border border-border">
+              <div className="flex items-center gap-2 mb-2">
+                <CheckCircle2 className="w-5 h-5 text-green-500" />
+                <span className="text-sm text-muted-foreground">{t("Completed", "Tamamlanan")}</span>
+              </div>
+              <p className="text-3xl font-bold">{dailyStats.completedOrders}</p>
+            </div>
+            <div className="bg-card p-4 rounded-xl border border-border">
+              <div className="flex items-center gap-2 mb-2">
+                <TrendingUp className="w-5 h-5 text-primary" />
+                <span className="text-sm text-muted-foreground">{t("Revenue", "Gelir")}</span>
+              </div>
+              <p className="text-3xl font-bold text-primary">₺{dailyStats.totalRevenue.toFixed(0)}</p>
+            </div>
+            <div className="bg-card p-4 rounded-xl border border-border">
+              <div className="flex items-center gap-2 mb-2">
+                <Clock className="w-5 h-5 text-amber-500" />
+                <span className="text-sm text-muted-foreground">{t("Avg Order", "Ort. Sipariş")}</span>
+              </div>
+              <p className="text-3xl font-bold">₺{dailyStats.avgOrderValue.toFixed(0)}</p>
+            </div>
+          </div>
 
-      {/* Orders Grid */}
-      {loading ? (
-        <div className="text-center py-12">
-          <RefreshCw className="w-8 h-8 animate-spin mx-auto text-primary" />
-        </div>
-      ) : (
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
-          <AnimatePresence mode="popLayout">
-            {filteredOrders.map((order) => {
-              const status = statusConfig[order.status];
-              const OrderTypeIcon = orderTypeIcons[order.order_type] || Package;
-              const PaymentIcon = paymentIcons[order.payment_method] || CreditCard;
-              const nextStatus = getNextStatus(order.status);
+          {/* Clear Today Button */}
+          {dailyStats.totalOrders > 0 && dailyStats.pendingOrders === 0 && (
+            <div className="flex justify-end">
+              <Button 
+                variant="outline" 
+                className="gap-2 text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                onClick={() => {
+                  setSelectedDate(new Date());
+                  setShowClearDialog(true);
+                }}
+              >
+                <Trash2 className="w-4 h-4" />
+                {t("Clear Today's Orders", "Bugünün Siparişlerini Sil")}
+              </Button>
+            </div>
+          )}
 
+          {/* Filters */}
+          <div className="flex flex-wrap gap-4">
+            <div className="relative flex-1 min-w-[200px]">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                placeholder={t("Search by name, phone, order #...", "İsim, telefon, sipariş no ile ara...")}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-10"
+              />
+            </div>
+            <Select value={statusFilter} onValueChange={setStatusFilter}>
+              <SelectTrigger className="w-[180px]">
+                <SelectValue placeholder={t("All Statuses", "Tüm Durumlar")} />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">{t("All Statuses", "Tüm Durumlar")}</SelectItem>
+                {Object.entries(statusConfig).map(([key, config]) => (
+                  <SelectItem key={key} value={key}>
+                    {language === "en" ? config.label : config.labelTr}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+
+          {/* Status Stats */}
+          <div className="grid grid-cols-2 md:grid-cols-4 lg:grid-cols-6 gap-4">
+            {Object.entries(statusConfig).map(([key, config]) => {
+              const count = filteredOrders.filter((o) => o.status === key).length;
+              const StatusIcon = config.icon;
               return (
                 <motion.div
-                  key={order.id}
-                  layout
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  exit={{ opacity: 0, scale: 0.95 }}
-                  className="bg-card rounded-xl p-5 border border-border hover:border-primary/50 transition-colors"
+                  key={key}
+                  whileHover={{ scale: 1.02 }}
+                  className={`p-4 rounded-xl ${config.color}/10 border border-${config.color}/20 cursor-pointer`}
+                  onClick={() => setStatusFilter(statusFilter === key ? "all" : key)}
                 >
-                  {/* Header */}
-                  <div className="flex items-start justify-between mb-4">
-                    <div>
-                      <div className="flex items-center gap-2 mb-1">
-                        <span className="text-xl font-bold">#{order.order_number}</span>
-                        <Badge className={`${status.color} text-white`}>
-                          {language === "en" ? status.label : status.labelTr}
-                        </Badge>
-                      </div>
-                      <p className="text-sm text-muted-foreground">
-                        {format(new Date(order.created_at), "MMM d, HH:mm")}
-                      </p>
-                    </div>
-                    <div className="flex gap-1">
-                      <div className="p-2 rounded-lg bg-muted" title={order.order_type}>
-                        <OrderTypeIcon className="w-4 h-4" />
-                      </div>
-                      <div className="p-2 rounded-lg bg-muted" title={order.payment_method}>
-                        <PaymentIcon className="w-4 h-4" />
-                      </div>
-                    </div>
+                  <div className="flex items-center gap-2 mb-2">
+                    <StatusIcon className={`w-5 h-5 ${config.color.replace("bg-", "text-")}`} />
+                    <span className="text-sm font-medium">
+                      {language === "en" ? config.label : config.labelTr}
+                    </span>
                   </div>
-
-                  {/* Customer */}
-                  <div className="mb-4">
-                    <p className="font-medium">{order.customer_name}</p>
-                    <p className="text-sm text-muted-foreground">{order.customer_phone}</p>
-                    {order.table_number && (
-                      <p className="text-sm text-primary mt-1">
-                        {t("Table", "Masa")}: {order.table_number}
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Total */}
-                  <div className="flex items-center justify-between mb-4 p-3 bg-background rounded-lg">
-                    <span className="text-sm text-muted-foreground">{t("Total", "Toplam")}</span>
-                    <span className="text-xl font-bold text-primary">₺{order.total.toFixed(2)}</span>
-                  </div>
-
-                  {/* Actions */}
-                  <div className="flex gap-2">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      className="flex-1"
-                      onClick={() => openOrderDetail(order)}
-                    >
-                      <Eye className="w-4 h-4 mr-1" />
-                      {t("Details", "Detay")}
-                    </Button>
-                    {nextStatus && (
-                      <Button
-                        size="sm"
-                        className="flex-1 bg-primary hover:bg-primary/90"
-                        onClick={() => updateOrderStatus(order.id, nextStatus)}
-                      >
-                        {language === "en"
-                          ? statusConfig[nextStatus].label
-                          : statusConfig[nextStatus].labelTr}
-                      </Button>
-                    )}
-                    {order.status === "new" && (
-                      <Button
-                        variant="destructive"
-                        size="sm"
-                        onClick={() => updateOrderStatus(order.id, "cancelled")}
-                      >
-                        <XCircle className="w-4 h-4" />
-                      </Button>
-                    )}
-                  </div>
+                  <p className="text-2xl font-bold">{count}</p>
                 </motion.div>
               );
             })}
-          </AnimatePresence>
-        </div>
-      )}
+          </div>
 
-      {filteredOrders.length === 0 && !loading && (
-        <div className="text-center py-12">
-          <Package className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-          <p className="text-muted-foreground">
-            {t("No orders found", "Sipariş bulunamadı")}
-          </p>
-        </div>
-      )}
+          {/* Orders Grid */}
+          {loading ? (
+            <div className="text-center py-12">
+              <RefreshCw className="w-8 h-8 animate-spin mx-auto text-primary" />
+            </div>
+          ) : (
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+              <AnimatePresence mode="popLayout">
+                {filteredOrders.map((order) => {
+                  const status = statusConfig[order.status];
+                  const OrderTypeIcon = orderTypeIcons[order.order_type] || Package;
+                  const PaymentIcon = paymentIcons[order.payment_method] || CreditCard;
+                  const nextStatus = getNextStatus(order.status);
+
+                  return (
+                    <motion.div
+                      key={order.id}
+                      layout
+                      initial={{ opacity: 0, scale: 0.95 }}
+                      animate={{ opacity: 1, scale: 1 }}
+                      exit={{ opacity: 0, scale: 0.95 }}
+                      className="bg-card rounded-xl p-5 border border-border hover:border-primary/50 transition-colors"
+                    >
+                      {/* Header */}
+                      <div className="flex items-start justify-between mb-4">
+                        <div>
+                          <div className="flex items-center gap-2 mb-1">
+                            <span className="text-xl font-bold">#{order.order_number}</span>
+                            <Badge className={`${status.color} text-white`}>
+                              {language === "en" ? status.label : status.labelTr}
+                            </Badge>
+                          </div>
+                          <p className="text-sm text-muted-foreground">
+                            {format(new Date(order.created_at), "MMM d, HH:mm")}
+                          </p>
+                        </div>
+                        <div className="flex gap-1">
+                          <div className="p-2 rounded-lg bg-muted" title={order.order_type}>
+                            <OrderTypeIcon className="w-4 h-4" />
+                          </div>
+                          <div className="p-2 rounded-lg bg-muted" title={order.payment_method}>
+                            <PaymentIcon className="w-4 h-4" />
+                          </div>
+                        </div>
+                      </div>
+
+                      {/* Table Number */}
+                      {order.table_number && (
+                        <div className="mb-4">
+                          <p className="text-lg font-bold text-primary">
+                            {t("Table", "Masa")} {order.table_number}
+                          </p>
+                        </div>
+                      )}
+
+                      {/* Total */}
+                      <div className="flex items-center justify-between mb-4 p-3 bg-background rounded-lg">
+                        <span className="text-sm text-muted-foreground">{t("Total", "Toplam")}</span>
+                        <span className="text-xl font-bold text-primary">₺{order.total.toFixed(2)}</span>
+                      </div>
+
+                      {/* Actions */}
+                      <div className="flex gap-2">
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          className="flex-1"
+                          onClick={() => openOrderDetail(order)}
+                        >
+                          <Eye className="w-4 h-4 mr-1" />
+                          {t("Details", "Detay")}
+                        </Button>
+                        {nextStatus && (
+                          <Button
+                            size="sm"
+                            className="flex-1 bg-primary hover:bg-primary/90"
+                            onClick={() => updateOrderStatus(order.id, nextStatus)}
+                          >
+                            {language === "en"
+                              ? statusConfig[nextStatus].label
+                              : statusConfig[nextStatus].labelTr}
+                          </Button>
+                        )}
+                        {order.status === "new" && (
+                          <Button
+                            variant="destructive"
+                            size="sm"
+                            onClick={() => updateOrderStatus(order.id, "cancelled")}
+                          >
+                            <XCircle className="w-4 h-4" />
+                          </Button>
+                        )}
+                      </div>
+                    </motion.div>
+                  );
+                })}
+              </AnimatePresence>
+            </div>
+          )}
+
+          {filteredOrders.length === 0 && !loading && (
+            <div className="text-center py-12">
+              <Package className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+              <p className="text-muted-foreground">
+                {t("No orders found", "Sipariş bulunamadı")}
+              </p>
+            </div>
+          )}
+        </TabsContent>
+
+        {/* History Tab */}
+        <TabsContent value="history" className="space-y-6 mt-6">
+          {/* Date Selector */}
+          <div className="flex flex-wrap items-center gap-4">
+            <div className="flex items-center gap-2">
+              <Calendar className="w-5 h-5 text-primary" />
+              <span className="font-medium">{t("Select Date", "Tarih Seçin")}:</span>
+            </div>
+            <Select 
+              value={selectedDate.toISOString()} 
+              onValueChange={(val) => setSelectedDate(new Date(val))}
+            >
+              <SelectTrigger className="w-[200px]">
+                <SelectValue placeholder={t("Select date", "Tarih seçin")} />
+              </SelectTrigger>
+              <SelectContent>
+                {orderDates.filter(d => !isToday(d)).slice(0, 30).map((date) => (
+                  <SelectItem key={date.toISOString()} value={date.toISOString()}>
+                    {format(date, "EEEE, MMM d, yyyy")}
+                  </SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+            
+            {historyStats.totalOrders > 0 && (
+              <Button 
+                variant="outline" 
+                size="sm"
+                className="gap-2 text-destructive hover:bg-destructive hover:text-destructive-foreground"
+                onClick={() => setShowClearDialog(true)}
+              >
+                <Trash2 className="w-4 h-4" />
+                {t("Clear This Day", "Bu Günü Sil")}
+              </Button>
+            )}
+          </div>
+
+          {/* History Stats */}
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+            <div className="bg-card p-4 rounded-xl border border-border">
+              <div className="flex items-center gap-2 mb-2">
+                <ShoppingBag className="w-5 h-5 text-primary" />
+                <span className="text-sm text-muted-foreground">{t("Orders", "Siparişler")}</span>
+              </div>
+              <p className="text-3xl font-bold">{historyStats.totalOrders}</p>
+            </div>
+            <div className="bg-card p-4 rounded-xl border border-border">
+              <div className="flex items-center gap-2 mb-2">
+                <CheckCircle2 className="w-5 h-5 text-green-500" />
+                <span className="text-sm text-muted-foreground">{t("Completed", "Tamamlanan")}</span>
+              </div>
+              <p className="text-3xl font-bold">{historyStats.completedOrders}</p>
+            </div>
+            <div className="bg-card p-4 rounded-xl border border-border">
+              <div className="flex items-center gap-2 mb-2">
+                <TrendingUp className="w-5 h-5 text-primary" />
+                <span className="text-sm text-muted-foreground">{t("Revenue", "Gelir")}</span>
+              </div>
+              <p className="text-3xl font-bold text-primary">₺{historyStats.totalRevenue.toFixed(0)}</p>
+            </div>
+            <div className="bg-card p-4 rounded-xl border border-border">
+              <div className="flex items-center gap-2 mb-2">
+                <XCircle className="w-5 h-5 text-red-500" />
+                <span className="text-sm text-muted-foreground">{t("Cancelled", "İptal")}</span>
+              </div>
+              <p className="text-3xl font-bold">{historyStats.cancelledOrders}</p>
+            </div>
+          </div>
+
+          {/* History Orders Grid */}
+          {filteredOrders.length > 0 ? (
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+              {filteredOrders.map((order) => {
+                const status = statusConfig[order.status];
+                return (
+                  <div
+                    key={order.id}
+                    className="bg-card rounded-xl p-5 border border-border cursor-pointer hover:border-primary/50 transition-colors"
+                    onClick={() => openOrderDetail(order)}
+                  >
+                    <div className="flex items-start justify-between mb-3">
+                      <div>
+                        <span className="text-lg font-bold">#{order.order_number}</span>
+                        <Badge className={`${status.color} text-white ml-2`}>
+                          {language === "en" ? status.label : status.labelTr}
+                        </Badge>
+                      </div>
+                      <span className="text-sm text-muted-foreground">
+                        {format(new Date(order.created_at), "HH:mm")}
+                      </span>
+                    </div>
+                    {order.table_number && (
+                      <p className="text-primary font-medium mb-2">
+                        {t("Table", "Masa")} {order.table_number}
+                      </p>
+                    )}
+                    <div className="flex justify-between items-center">
+                      <span className="text-muted-foreground text-sm">{t("Total", "Toplam")}</span>
+                      <span className="text-lg font-bold text-primary">₺{order.total.toFixed(2)}</span>
+                    </div>
+                  </div>
+                );
+              })}
+            </div>
+          ) : (
+            <div className="text-center py-12">
+              <Package className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
+              <p className="text-muted-foreground">
+                {t("No orders for this date", "Bu tarih için sipariş yok")}
+              </p>
+            </div>
+          )}
+        </TabsContent>
+      </Tabs>
+
+      {/* Clear Orders Confirmation Dialog */}
+      <AlertDialog open={showClearDialog} onOpenChange={setShowClearDialog}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle className="flex items-center gap-2">
+              <AlertTriangle className="w-5 h-5 text-destructive" />
+              {t("Clear Orders", "Siparişleri Sil")}
+            </AlertDialogTitle>
+            <AlertDialogDescription>
+              {t(
+                `Are you sure you want to delete all orders from ${format(selectedDate, "MMMM d, yyyy")}? This action cannot be undone.`,
+                `${format(selectedDate, "d MMMM yyyy")} tarihindeki tüm siparişleri silmek istediğinizden emin misiniz? Bu işlem geri alınamaz.`
+              )}
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel disabled={clearingOrders}>
+              {t("Cancel", "İptal")}
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() => clearOrdersForDate(selectedDate)}
+              disabled={clearingOrders}
+              className="bg-destructive hover:bg-destructive/90"
+            >
+              {clearingOrders ? t("Deleting...", "Siliniyor...") : t("Delete All", "Tümünü Sil")}
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
 
       {/* Order Detail Dialog */}
       <Dialog open={isDetailOpen} onOpenChange={setIsDetailOpen}>
