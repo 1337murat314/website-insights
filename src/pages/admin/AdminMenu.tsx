@@ -1,5 +1,5 @@
-import { useEffect, useState } from "react";
-import { motion } from "framer-motion";
+import { useEffect, useState, useMemo } from "react";
+import { motion, AnimatePresence } from "framer-motion";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -7,17 +7,26 @@ import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Switch } from "@/components/ui/switch";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
-import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from "@/components/ui/dialog";
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Badge } from "@/components/ui/badge";
+import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
-import { Plus, Edit, Trash2, UtensilsCrossed, Leaf, Wheat, Flame, Image } from "lucide-react";
+import { 
+  Plus, Edit, Trash2, UtensilsCrossed, Leaf, Wheat, Flame, Image, 
+  Search, ChevronDown, ChevronRight, Eye, EyeOff, Star, GripVertical,
+  ArrowUp, ArrowDown, Copy, MoreVertical, RefreshCw, Filter, Package
+} from "lucide-react";
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import ImageUpload from "@/components/admin/ImageUpload";
 
 interface Category {
   id: string;
   name: string;
   name_tr: string | null;
+  description: string | null;
+  description_tr: string | null;
   sort_order: number;
   is_active: boolean;
 }
@@ -57,6 +66,15 @@ const defaultMenuItem: Partial<MenuItem> = {
   category_id: null,
 };
 
+const defaultCategory: Partial<Category> = {
+  name: "",
+  name_tr: "",
+  description: "",
+  description_tr: "",
+  sort_order: 0,
+  is_active: true,
+};
+
 const AdminMenu = () => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
@@ -64,15 +82,28 @@ const AdminMenu = () => {
   const [isItemDialogOpen, setIsItemDialogOpen] = useState(false);
   const [isCategoryDialogOpen, setIsCategoryDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<Partial<MenuItem>>(defaultMenuItem);
-  const [editingCategory, setEditingCategory] = useState<Partial<Category>>({ name: "", name_tr: "", sort_order: 0, is_active: true });
+  const [editingCategory, setEditingCategory] = useState<Partial<Category>>(defaultCategory);
   const [isEditing, setIsEditing] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const [filterAvailable, setFilterAvailable] = useState<"all" | "available" | "unavailable">("all");
+  const [filterFeatured, setFilterFeatured] = useState<boolean | null>(null);
+  const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
+  const [activeTab, setActiveTab] = useState("organized");
   const { toast } = useToast();
 
   useEffect(() => {
     fetchData();
   }, []);
 
+  // Expand all categories by default on load
+  useEffect(() => {
+    if (categories.length > 0 && expandedCategories.size === 0) {
+      setExpandedCategories(new Set(categories.map(c => c.id)));
+    }
+  }, [categories]);
+
   const fetchData = async () => {
+    setIsLoading(true);
     const [categoriesRes, itemsRes] = await Promise.all([
       supabase.from("menu_categories").select("*").order("sort_order"),
       supabase.from("menu_items").select("*").order("sort_order"),
@@ -82,6 +113,66 @@ const AdminMenu = () => {
     if (itemsRes.data) setMenuItems(itemsRes.data);
     setIsLoading(false);
   };
+
+  // Grouped items by category
+  const groupedItems = useMemo(() => {
+    const groups: Record<string, MenuItem[]> = {};
+    
+    // Initialize with all categories
+    categories.forEach(cat => {
+      groups[cat.id] = [];
+    });
+    groups["uncategorized"] = [];
+
+    // Filter and group items
+    menuItems.forEach(item => {
+      // Apply filters
+      if (searchQuery) {
+        const query = searchQuery.toLowerCase();
+        if (!item.name.toLowerCase().includes(query) && 
+            !(item.name_tr?.toLowerCase().includes(query)) &&
+            !(item.description?.toLowerCase().includes(query))) {
+          return;
+        }
+      }
+      if (filterAvailable === "available" && !item.is_available) return;
+      if (filterAvailable === "unavailable" && item.is_available) return;
+      if (filterFeatured === true && !item.is_featured) return;
+      if (filterFeatured === false && item.is_featured) return;
+
+      const categoryId = item.category_id || "uncategorized";
+      if (!groups[categoryId]) groups[categoryId] = [];
+      groups[categoryId].push(item);
+    });
+
+    // Sort items within each group
+    Object.keys(groups).forEach(key => {
+      groups[key].sort((a, b) => a.sort_order - b.sort_order);
+    });
+
+    return groups;
+  }, [menuItems, categories, searchQuery, filterAvailable, filterFeatured]);
+
+  const stats = useMemo(() => ({
+    total: menuItems.length,
+    available: menuItems.filter(i => i.is_available).length,
+    unavailable: menuItems.filter(i => !i.is_available).length,
+    featured: menuItems.filter(i => i.is_featured).length,
+    categories: categories.length,
+  }), [menuItems, categories]);
+
+  const toggleCategory = (categoryId: string) => {
+    const newExpanded = new Set(expandedCategories);
+    if (newExpanded.has(categoryId)) {
+      newExpanded.delete(categoryId);
+    } else {
+      newExpanded.add(categoryId);
+    }
+    setExpandedCategories(newExpanded);
+  };
+
+  const expandAll = () => setExpandedCategories(new Set([...categories.map(c => c.id), "uncategorized"]));
+  const collapseAll = () => setExpandedCategories(new Set());
 
   const saveMenuItem = async () => {
     const itemData = {
@@ -118,6 +209,70 @@ const AdminMenu = () => {
     }
   };
 
+  const toggleItemAvailability = async (item: MenuItem) => {
+    const { error } = await supabase
+      .from("menu_items")
+      .update({ is_available: !item.is_available })
+      .eq("id", item.id);
+    
+    if (error) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    } else {
+      setMenuItems(prev => prev.map(i => i.id === item.id ? { ...i, is_available: !i.is_available } : i));
+      toast({ title: item.is_available ? "Item hidden" : "Item visible", description: item.name });
+    }
+  };
+
+  const toggleItemFeatured = async (item: MenuItem) => {
+    const { error } = await supabase
+      .from("menu_items")
+      .update({ is_featured: !item.is_featured })
+      .eq("id", item.id);
+    
+    if (error) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    } else {
+      setMenuItems(prev => prev.map(i => i.id === item.id ? { ...i, is_featured: !i.is_featured } : i));
+      toast({ title: item.is_featured ? "Removed from featured" : "Added to featured", description: item.name });
+    }
+  };
+
+  const duplicateItem = async (item: MenuItem) => {
+    const newItem = {
+      ...item,
+      id: undefined,
+      name: `${item.name} (Copy)`,
+      name_tr: item.name_tr ? `${item.name_tr} (Kopya)` : null,
+      is_featured: false,
+      sort_order: item.sort_order + 1,
+    };
+    
+    const { error } = await supabase.from("menu_items").insert([newItem as any]);
+    if (error) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: "Item duplicated", description: `${newItem.name} created` });
+      fetchData();
+    }
+  };
+
+  const moveItem = async (item: MenuItem, direction: "up" | "down") => {
+    const categoryItems = groupedItems[item.category_id || "uncategorized"];
+    const currentIndex = categoryItems.findIndex(i => i.id === item.id);
+    const swapIndex = direction === "up" ? currentIndex - 1 : currentIndex + 1;
+    
+    if (swapIndex < 0 || swapIndex >= categoryItems.length) return;
+    
+    const swapItem = categoryItems[swapIndex];
+    
+    await Promise.all([
+      supabase.from("menu_items").update({ sort_order: swapItem.sort_order }).eq("id", item.id),
+      supabase.from("menu_items").update({ sort_order: item.sort_order }).eq("id", swapItem.id),
+    ]);
+    
+    fetchData();
+  };
+
   const saveCategory = async () => {
     let error;
     if (isEditing && editingCategory.id) {
@@ -131,7 +286,7 @@ const AdminMenu = () => {
     } else {
       toast({ title: "Success", description: `Category ${isEditing ? "updated" : "created"}` });
       setIsCategoryDialogOpen(false);
-      setEditingCategory({ name: "", name_tr: "", sort_order: 0, is_active: true });
+      setEditingCategory(defaultCategory);
       setIsEditing(false);
       fetchData();
     }
@@ -148,121 +303,381 @@ const AdminMenu = () => {
     }
   };
 
+  const toggleCategoryActive = async (category: Category) => {
+    const { error } = await supabase
+      .from("menu_categories")
+      .update({ is_active: !category.is_active })
+      .eq("id", category.id);
+    
+    if (error) {
+      toast({ title: "Error", description: error.message, variant: "destructive" });
+    } else {
+      setCategories(prev => prev.map(c => c.id === category.id ? { ...c, is_active: !c.is_active } : c));
+    }
+  };
+
   const getCategoryName = (categoryId: string | null) => {
+    if (!categoryId || categoryId === "uncategorized") return "Uncategorized";
     const category = categories.find(c => c.id === categoryId);
     return category?.name || "Uncategorized";
   };
 
+  const openNewItem = (categoryId?: string) => {
+    setEditingItem({ ...defaultMenuItem, category_id: categoryId || null });
+    setIsEditing(false);
+    setIsItemDialogOpen(true);
+  };
+
+  const renderItemCard = (item: MenuItem, compact = false) => (
+    <motion.div
+      key={item.id}
+      layout
+      initial={{ opacity: 0, y: 10 }}
+      animate={{ opacity: 1, y: 0 }}
+      exit={{ opacity: 0, y: -10 }}
+      className={`group bg-card rounded-lg border border-border hover:border-primary/50 transition-all overflow-hidden ${
+        !item.is_available ? "opacity-60" : ""
+      }`}
+    >
+      <div className="flex">
+        {/* Image */}
+        <div className="relative w-20 h-20 shrink-0 bg-secondary/50">
+          {item.image_url ? (
+            <img src={item.image_url} alt={item.name} className="w-full h-full object-cover" />
+          ) : (
+            <div className="w-full h-full flex items-center justify-center">
+              <Image className="w-6 h-6 text-muted-foreground/30" />
+            </div>
+          )}
+          {item.is_featured && (
+            <div className="absolute top-1 left-1 w-5 h-5 rounded-full bg-primary flex items-center justify-center">
+              <Star className="w-3 h-3 text-primary-foreground fill-current" />
+            </div>
+          )}
+        </div>
+
+        {/* Content */}
+        <div className="flex-1 p-2 min-w-0">
+          <div className="flex items-start justify-between gap-2">
+            <div className="min-w-0">
+              <h4 className="font-medium text-sm truncate">{item.name}</h4>
+              {item.name_tr && <p className="text-xs text-muted-foreground truncate">{item.name_tr}</p>}
+            </div>
+            <span className="font-bold text-primary text-sm shrink-0">₺{item.price}</span>
+          </div>
+          
+          {/* Dietary badges */}
+          <div className="flex flex-wrap gap-1 mt-1">
+            {item.is_vegetarian && <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 border-green-500 text-green-500"><Leaf className="w-2 h-2 mr-0.5" />V</Badge>}
+            {item.is_vegan && <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 border-green-600 text-green-600"><Leaf className="w-2 h-2 mr-0.5" />VG</Badge>}
+            {item.is_gluten_free && <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 border-amber-500 text-amber-500"><Wheat className="w-2 h-2 mr-0.5" />GF</Badge>}
+            {item.is_spicy && <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 border-red-500 text-red-500"><Flame className="w-2 h-2 mr-0.5" />🌶</Badge>}
+          </div>
+        </div>
+
+        {/* Actions */}
+        <div className="flex flex-col justify-center gap-0.5 p-1 border-l border-border bg-muted/30">
+          <Button
+            size="icon"
+            variant="ghost"
+            className="h-6 w-6"
+            onClick={() => toggleItemAvailability(item)}
+            title={item.is_available ? "Hide item" : "Show item"}
+          >
+            {item.is_available ? <Eye className="h-3 w-3" /> : <EyeOff className="h-3 w-3 text-muted-foreground" />}
+          </Button>
+          <Button
+            size="icon"
+            variant="ghost"
+            className="h-6 w-6"
+            onClick={() => toggleItemFeatured(item)}
+            title={item.is_featured ? "Unfeature" : "Feature"}
+          >
+            <Star className={`h-3 w-3 ${item.is_featured ? "fill-primary text-primary" : ""}`} />
+          </Button>
+          <DropdownMenu>
+            <DropdownMenuTrigger asChild>
+              <Button size="icon" variant="ghost" className="h-6 w-6">
+                <MoreVertical className="h-3 w-3" />
+              </Button>
+            </DropdownMenuTrigger>
+            <DropdownMenuContent align="end" className="w-36">
+              <DropdownMenuItem onClick={() => { setEditingItem(item); setIsEditing(true); setIsItemDialogOpen(true); }}>
+                <Edit className="h-3 w-3 mr-2" /> Edit
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => duplicateItem(item)}>
+                <Copy className="h-3 w-3 mr-2" /> Duplicate
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => moveItem(item, "up")}>
+                <ArrowUp className="h-3 w-3 mr-2" /> Move Up
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => moveItem(item, "down")}>
+                <ArrowDown className="h-3 w-3 mr-2" /> Move Down
+              </DropdownMenuItem>
+              <DropdownMenuSeparator />
+              <DropdownMenuItem onClick={() => deleteMenuItem(item.id)} className="text-destructive">
+                <Trash2 className="h-3 w-3 mr-2" /> Delete
+              </DropdownMenuItem>
+            </DropdownMenuContent>
+          </DropdownMenu>
+        </div>
+      </div>
+    </motion.div>
+  );
+
   return (
-    <div className="space-y-6">
+    <div className="space-y-4">
+      {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-serif font-bold">Menu Management</h1>
-          <p className="text-muted-foreground mt-1">Manage your restaurant's menu items and categories</p>
+          <h1 className="text-2xl font-bold">Menu Management</h1>
+          <p className="text-sm text-muted-foreground">Organize your restaurant's menu</p>
+        </div>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={fetchData}>
+            <RefreshCw className="h-4 w-4" />
+          </Button>
+          <Button size="sm" onClick={() => openNewItem()}>
+            <Plus className="h-4 w-4 mr-1" /> Add Item
+          </Button>
         </div>
       </div>
 
-      <Tabs defaultValue="items">
-        <TabsList>
-          <TabsTrigger value="items">Menu Items</TabsTrigger>
-          <TabsTrigger value="categories">Categories</TabsTrigger>
+      {/* Stats */}
+      <div className="grid grid-cols-2 sm:grid-cols-5 gap-2">
+        <Card className="p-3">
+          <div className="text-2xl font-bold">{stats.total}</div>
+          <div className="text-xs text-muted-foreground">Total Items</div>
+        </Card>
+        <Card className="p-3">
+          <div className="text-2xl font-bold text-green-500">{stats.available}</div>
+          <div className="text-xs text-muted-foreground">Available</div>
+        </Card>
+        <Card className="p-3">
+          <div className="text-2xl font-bold text-muted-foreground">{stats.unavailable}</div>
+          <div className="text-xs text-muted-foreground">Hidden</div>
+        </Card>
+        <Card className="p-3">
+          <div className="text-2xl font-bold text-primary">{stats.featured}</div>
+          <div className="text-xs text-muted-foreground">Featured</div>
+        </Card>
+        <Card className="p-3">
+          <div className="text-2xl font-bold">{stats.categories}</div>
+          <div className="text-xs text-muted-foreground">Categories</div>
+        </Card>
+      </div>
+
+      {/* Tabs */}
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList className="grid w-full max-w-md grid-cols-2">
+          <TabsTrigger value="organized">By Category</TabsTrigger>
+          <TabsTrigger value="categories">Manage Categories</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="items" className="space-y-4">
-          <div className="flex justify-end">
-            <Button onClick={() => { setEditingItem(defaultMenuItem); setIsEditing(false); setIsItemDialogOpen(true); }}>
-              <Plus className="h-4 w-4 mr-2" /> Add Item
+        {/* Organized by Category Tab */}
+        <TabsContent value="organized" className="space-y-4 mt-4">
+          {/* Search & Filters */}
+          <div className="flex flex-wrap gap-2 items-center">
+            <div className="relative flex-1 min-w-[200px]">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-muted-foreground" />
+              <Input
+                placeholder="Search items..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-9 h-9"
+              />
+            </div>
+            <Select value={filterAvailable} onValueChange={(v: any) => setFilterAvailable(v)}>
+              <SelectTrigger className="w-32 h-9">
+                <SelectValue />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Items</SelectItem>
+                <SelectItem value="available">Available</SelectItem>
+                <SelectItem value="unavailable">Hidden</SelectItem>
+              </SelectContent>
+            </Select>
+            <Button
+              variant={filterFeatured === true ? "default" : "outline"}
+              size="sm"
+              onClick={() => setFilterFeatured(filterFeatured === true ? null : true)}
+              className="h-9"
+            >
+              <Star className="h-3 w-3 mr-1" /> Featured
             </Button>
+            <div className="flex gap-1">
+              <Button variant="ghost" size="sm" onClick={expandAll} className="h-9 text-xs">Expand All</Button>
+              <Button variant="ghost" size="sm" onClick={collapseAll} className="h-9 text-xs">Collapse</Button>
+            </div>
           </div>
 
+          {/* Categories with Items */}
           {isLoading ? (
             <Card><CardContent className="p-8 text-center text-muted-foreground">Loading...</CardContent></Card>
-          ) : menuItems.length === 0 ? (
-            <Card><CardContent className="p-8 text-center text-muted-foreground">No menu items yet</CardContent></Card>
           ) : (
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-              {menuItems.map((item, index) => (
-                <motion.div
-                  key={item.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.05 }}
-                >
-                  <Card className={`border-border/50 overflow-hidden ${!item.is_available ? "opacity-50" : ""}`}>
-                    {item.image_url ? (
-                      <div className="relative h-40 overflow-hidden">
-                        <img 
-                          src={item.image_url} 
-                          alt={item.name}
-                          className="w-full h-full object-cover"
-                        />
-                        {item.is_featured && (
-                          <span className="absolute top-2 right-2 bg-primary text-primary-foreground text-xs px-2 py-1 rounded-full">
-                            Featured
-                          </span>
+            <div className="space-y-3">
+              {categories.map((category) => {
+                const items = groupedItems[category.id] || [];
+                const isExpanded = expandedCategories.has(category.id);
+                
+                return (
+                  <Card key={category.id} className={`overflow-hidden ${!category.is_active ? "opacity-60" : ""}`}>
+                    <Collapsible open={isExpanded} onOpenChange={() => toggleCategory(category.id)}>
+                      <CollapsibleTrigger asChild>
+                        <div className="flex items-center justify-between p-3 cursor-pointer hover:bg-muted/50 transition-colors">
+                          <div className="flex items-center gap-3">
+                            {isExpanded ? (
+                              <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                            ) : (
+                              <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                            )}
+                            <div>
+                              <h3 className="font-semibold">{category.name}</h3>
+                              {category.name_tr && <p className="text-xs text-muted-foreground">{category.name_tr}</p>}
+                            </div>
+                            <Badge variant="secondary" className="text-xs">{items.length} items</Badge>
+                            {!category.is_active && <Badge variant="outline" className="text-xs text-muted-foreground">Hidden</Badge>}
+                          </div>
+                          <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
+                            <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => openNewItem(category.id)}>
+                              <Plus className="h-3 w-3" />
+                            </Button>
+                            <Button size="icon" variant="ghost" className="h-7 w-7" onClick={() => { setEditingCategory(category); setIsEditing(true); setIsCategoryDialogOpen(true); }}>
+                              <Edit className="h-3 w-3" />
+                            </Button>
+                          </div>
+                        </div>
+                      </CollapsibleTrigger>
+                      <CollapsibleContent>
+                        <div className="p-3 pt-0 grid grid-cols-1 md:grid-cols-2 gap-2">
+                          <AnimatePresence>
+                            {items.map((item) => renderItemCard(item))}
+                          </AnimatePresence>
+                          {items.length === 0 && (
+                            <div className="col-span-full text-center py-6 text-muted-foreground text-sm">
+                              No items in this category
+                              <Button variant="link" size="sm" onClick={() => openNewItem(category.id)} className="ml-2">
+                                Add one
+                              </Button>
+                            </div>
+                          )}
+                        </div>
+                      </CollapsibleContent>
+                    </Collapsible>
+                  </Card>
+                );
+              })}
+
+              {/* Uncategorized */}
+              {(groupedItems["uncategorized"]?.length > 0 || !searchQuery) && (
+                <Card className="overflow-hidden border-dashed">
+                  <Collapsible open={expandedCategories.has("uncategorized")} onOpenChange={() => toggleCategory("uncategorized")}>
+                    <CollapsibleTrigger asChild>
+                      <div className="flex items-center justify-between p-3 cursor-pointer hover:bg-muted/50 transition-colors">
+                        <div className="flex items-center gap-3">
+                          {expandedCategories.has("uncategorized") ? (
+                            <ChevronDown className="h-4 w-4 text-muted-foreground" />
+                          ) : (
+                            <ChevronRight className="h-4 w-4 text-muted-foreground" />
+                          )}
+                          <div>
+                            <h3 className="font-semibold text-muted-foreground">Uncategorized</h3>
+                          </div>
+                          <Badge variant="secondary" className="text-xs">{groupedItems["uncategorized"]?.length || 0} items</Badge>
+                        </div>
+                        <Button size="icon" variant="ghost" className="h-7 w-7" onClick={(e) => { e.stopPropagation(); openNewItem(); }}>
+                          <Plus className="h-3 w-3" />
+                        </Button>
+                      </div>
+                    </CollapsibleTrigger>
+                    <CollapsibleContent>
+                      <div className="p-3 pt-0 grid grid-cols-1 md:grid-cols-2 gap-2">
+                        <AnimatePresence>
+                          {(groupedItems["uncategorized"] || []).map((item) => renderItemCard(item))}
+                        </AnimatePresence>
+                        {(!groupedItems["uncategorized"] || groupedItems["uncategorized"].length === 0) && (
+                          <div className="col-span-full text-center py-6 text-muted-foreground text-sm">
+                            No uncategorized items
+                          </div>
                         )}
                       </div>
-                    ) : (
-                      <div className="h-40 bg-secondary/50 flex items-center justify-center">
-                        <Image className="h-12 w-12 text-muted-foreground/30" />
-                      </div>
-                    )}
-                    <CardContent className="p-4">
-                      <div className="flex justify-between items-start mb-2">
-                        <div>
-                          <h3 className="font-semibold">{item.name}</h3>
-                          <p className="text-sm text-muted-foreground">{getCategoryName(item.category_id)}</p>
-                        </div>
-                        <span className="font-bold text-primary">${item.price}</span>
-                      </div>
-                      {item.description && (
-                        <p className="text-sm text-muted-foreground mb-3 line-clamp-2">{item.description}</p>
-                      )}
-                      <div className="flex flex-wrap gap-2 mb-3">
-                        {item.is_vegetarian && <span className="flex items-center gap-1 text-xs text-green-500"><Leaf className="h-3 w-3" />Vegetarian</span>}
-                        {item.is_vegan && <span className="flex items-center gap-1 text-xs text-green-600"><Leaf className="h-3 w-3" />Vegan</span>}
-                        {item.is_gluten_free && <span className="flex items-center gap-1 text-xs text-amber-500"><Wheat className="h-3 w-3" />GF</span>}
-                        {item.is_spicy && <span className="flex items-center gap-1 text-xs text-red-500"><Flame className="h-3 w-3" />Spicy</span>}
-                      </div>
-                      <div className="flex justify-end gap-2">
-                        <Button size="sm" variant="ghost" onClick={() => { setEditingItem(item); setIsEditing(true); setIsItemDialogOpen(true); }}>
-                          <Edit className="h-4 w-4" />
-                        </Button>
-                        <Button size="sm" variant="ghost" className="text-destructive" onClick={() => deleteMenuItem(item.id)}>
-                          <Trash2 className="h-4 w-4" />
-                        </Button>
-                      </div>
-                    </CardContent>
-                  </Card>
-                </motion.div>
-              ))}
+                    </CollapsibleContent>
+                  </Collapsible>
+                </Card>
+              )}
             </div>
           )}
         </TabsContent>
 
-        <TabsContent value="categories" className="space-y-4">
+        {/* Categories Management Tab */}
+        <TabsContent value="categories" className="space-y-4 mt-4">
           <div className="flex justify-end">
-            <Button onClick={() => { setEditingCategory({ name: "", name_tr: "", sort_order: 0, is_active: true }); setIsEditing(false); setIsCategoryDialogOpen(true); }}>
-              <Plus className="h-4 w-4 mr-2" /> Add Category
+            <Button size="sm" onClick={() => { setEditingCategory(defaultCategory); setIsEditing(false); setIsCategoryDialogOpen(true); }}>
+              <Plus className="h-4 w-4 mr-1" /> Add Category
             </Button>
           </div>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
-            {categories.map((category) => (
-              <Card key={category.id} className={`border-border/50 ${!category.is_active ? "opacity-50" : ""}`}>
-                <CardContent className="p-4 flex items-center justify-between">
-                  <div>
-                    <h3 className="font-semibold">{category.name}</h3>
-                    {category.name_tr && <p className="text-sm text-muted-foreground">{category.name_tr}</p>}
-                    <p className="text-xs text-muted-foreground">Order: {category.sort_order}</p>
-                  </div>
-                  <div className="flex gap-2">
-                    <Button size="sm" variant="ghost" onClick={() => { setEditingCategory(category); setIsEditing(true); setIsCategoryDialogOpen(true); }}>
-                      <Edit className="h-4 w-4" />
-                    </Button>
-                    <Button size="sm" variant="ghost" className="text-destructive" onClick={() => deleteCategory(category.id)}>
-                      <Trash2 className="h-4 w-4" />
-                    </Button>
+          <div className="space-y-2">
+            {categories.map((category, index) => (
+              <Card key={category.id} className={`${!category.is_active ? "opacity-60" : ""}`}>
+                <CardContent className="p-4">
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-4">
+                      <div className="flex flex-col items-center gap-0.5 text-muted-foreground">
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-6 w-6"
+                          disabled={index === 0}
+                          onClick={async () => {
+                            const prevCat = categories[index - 1];
+                            await Promise.all([
+                              supabase.from("menu_categories").update({ sort_order: prevCat.sort_order }).eq("id", category.id),
+                              supabase.from("menu_categories").update({ sort_order: category.sort_order }).eq("id", prevCat.id),
+                            ]);
+                            fetchData();
+                          }}
+                        >
+                          <ArrowUp className="h-3 w-3" />
+                        </Button>
+                        <span className="text-xs">{category.sort_order}</span>
+                        <Button
+                          size="icon"
+                          variant="ghost"
+                          className="h-6 w-6"
+                          disabled={index === categories.length - 1}
+                          onClick={async () => {
+                            const nextCat = categories[index + 1];
+                            await Promise.all([
+                              supabase.from("menu_categories").update({ sort_order: nextCat.sort_order }).eq("id", category.id),
+                              supabase.from("menu_categories").update({ sort_order: category.sort_order }).eq("id", nextCat.id),
+                            ]);
+                            fetchData();
+                          }}
+                        >
+                          <ArrowDown className="h-3 w-3" />
+                        </Button>
+                      </div>
+                      <div>
+                        <h3 className="font-semibold">{category.name}</h3>
+                        {category.name_tr && <p className="text-sm text-muted-foreground">{category.name_tr}</p>}
+                        {category.description && <p className="text-xs text-muted-foreground mt-1">{category.description}</p>}
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Badge variant="outline">{groupedItems[category.id]?.length || 0} items</Badge>
+                      <Switch
+                        checked={category.is_active}
+                        onCheckedChange={() => toggleCategoryActive(category)}
+                      />
+                      <Button size="icon" variant="ghost" onClick={() => { setEditingCategory(category); setIsEditing(true); setIsCategoryDialogOpen(true); }}>
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                      <Button size="icon" variant="ghost" className="text-destructive" onClick={() => deleteCategory(category.id)}>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </div>
                   </div>
                 </CardContent>
               </Card>
@@ -279,7 +694,7 @@ const AdminMenu = () => {
           </DialogHeader>
           <div className="grid grid-cols-2 gap-4">
             <div className="space-y-2">
-              <Label>Name (English)</Label>
+              <Label>Name (English) *</Label>
               <Input value={editingItem.name || ""} onChange={(e) => setEditingItem({ ...editingItem, name: e.target.value })} />
             </div>
             <div className="space-y-2">
@@ -288,24 +703,29 @@ const AdminMenu = () => {
             </div>
             <div className="col-span-2 space-y-2">
               <Label>Description (English)</Label>
-              <Textarea value={editingItem.description || ""} onChange={(e) => setEditingItem({ ...editingItem, description: e.target.value })} />
+              <Textarea value={editingItem.description || ""} onChange={(e) => setEditingItem({ ...editingItem, description: e.target.value })} rows={2} />
             </div>
             <div className="col-span-2 space-y-2">
               <Label>Description (Turkish)</Label>
-              <Textarea value={editingItem.description_tr || ""} onChange={(e) => setEditingItem({ ...editingItem, description_tr: e.target.value })} />
+              <Textarea value={editingItem.description_tr || ""} onChange={(e) => setEditingItem({ ...editingItem, description_tr: e.target.value })} rows={2} />
             </div>
             <div className="space-y-2">
-              <Label>Price</Label>
+              <Label>Price (₺) *</Label>
               <Input type="number" step="0.01" value={editingItem.price || ""} onChange={(e) => setEditingItem({ ...editingItem, price: parseFloat(e.target.value) })} />
             </div>
             <div className="space-y-2">
               <Label>Category</Label>
-              <Select value={editingItem.category_id || ""} onValueChange={(v) => setEditingItem({ ...editingItem, category_id: v || null })}>
+              <Select value={editingItem.category_id || "none"} onValueChange={(v) => setEditingItem({ ...editingItem, category_id: v === "none" ? null : v })}>
                 <SelectTrigger><SelectValue placeholder="Select category" /></SelectTrigger>
                 <SelectContent>
+                  <SelectItem value="none">No Category</SelectItem>
                   {categories.map(c => <SelectItem key={c.id} value={c.id}>{c.name}</SelectItem>)}
                 </SelectContent>
               </Select>
+            </div>
+            <div className="space-y-2">
+              <Label>Sort Order</Label>
+              <Input type="number" value={editingItem.sort_order || 0} onChange={(e) => setEditingItem({ ...editingItem, sort_order: parseInt(e.target.value) })} />
             </div>
             <div className="col-span-2 space-y-2">
               <Label>Food Image</Label>
@@ -314,36 +734,39 @@ const AdminMenu = () => {
                 onChange={(url) => setEditingItem({ ...editingItem, image_url: url })}
               />
             </div>
-            <div className="col-span-2 grid grid-cols-3 gap-4">
-              <div className="flex items-center gap-2">
-                <Switch checked={editingItem.is_vegetarian} onCheckedChange={(v) => setEditingItem({ ...editingItem, is_vegetarian: v })} />
-                <Label>Vegetarian</Label>
-              </div>
-              <div className="flex items-center gap-2">
-                <Switch checked={editingItem.is_vegan} onCheckedChange={(v) => setEditingItem({ ...editingItem, is_vegan: v })} />
-                <Label>Vegan</Label>
-              </div>
-              <div className="flex items-center gap-2">
-                <Switch checked={editingItem.is_gluten_free} onCheckedChange={(v) => setEditingItem({ ...editingItem, is_gluten_free: v })} />
-                <Label>Gluten-Free</Label>
-              </div>
-              <div className="flex items-center gap-2">
-                <Switch checked={editingItem.is_spicy} onCheckedChange={(v) => setEditingItem({ ...editingItem, is_spicy: v })} />
-                <Label>Spicy</Label>
-              </div>
-              <div className="flex items-center gap-2">
-                <Switch checked={editingItem.is_featured} onCheckedChange={(v) => setEditingItem({ ...editingItem, is_featured: v })} />
-                <Label>Featured</Label>
-              </div>
-              <div className="flex items-center gap-2">
-                <Switch checked={editingItem.is_available} onCheckedChange={(v) => setEditingItem({ ...editingItem, is_available: v })} />
-                <Label>Available</Label>
+            <div className="col-span-2">
+              <Label className="mb-3 block">Properties</Label>
+              <div className="grid grid-cols-3 gap-3">
+                <div className="flex items-center gap-2 p-2 rounded-lg border border-border">
+                  <Switch checked={editingItem.is_vegetarian} onCheckedChange={(v) => setEditingItem({ ...editingItem, is_vegetarian: v })} />
+                  <Label className="text-sm cursor-pointer">Vegetarian</Label>
+                </div>
+                <div className="flex items-center gap-2 p-2 rounded-lg border border-border">
+                  <Switch checked={editingItem.is_vegan} onCheckedChange={(v) => setEditingItem({ ...editingItem, is_vegan: v })} />
+                  <Label className="text-sm cursor-pointer">Vegan</Label>
+                </div>
+                <div className="flex items-center gap-2 p-2 rounded-lg border border-border">
+                  <Switch checked={editingItem.is_gluten_free} onCheckedChange={(v) => setEditingItem({ ...editingItem, is_gluten_free: v })} />
+                  <Label className="text-sm cursor-pointer">Gluten-Free</Label>
+                </div>
+                <div className="flex items-center gap-2 p-2 rounded-lg border border-border">
+                  <Switch checked={editingItem.is_spicy} onCheckedChange={(v) => setEditingItem({ ...editingItem, is_spicy: v })} />
+                  <Label className="text-sm cursor-pointer">Spicy</Label>
+                </div>
+                <div className="flex items-center gap-2 p-2 rounded-lg border border-border bg-primary/5">
+                  <Switch checked={editingItem.is_featured} onCheckedChange={(v) => setEditingItem({ ...editingItem, is_featured: v })} />
+                  <Label className="text-sm cursor-pointer">Featured</Label>
+                </div>
+                <div className="flex items-center gap-2 p-2 rounded-lg border border-border bg-green-500/5">
+                  <Switch checked={editingItem.is_available} onCheckedChange={(v) => setEditingItem({ ...editingItem, is_available: v })} />
+                  <Label className="text-sm cursor-pointer">Available</Label>
+                </div>
               </div>
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsItemDialogOpen(false)}>Cancel</Button>
-            <Button onClick={saveMenuItem}>{isEditing ? "Update" : "Create"}</Button>
+            <Button onClick={saveMenuItem} disabled={!editingItem.name || !editingItem.price}>{isEditing ? "Update" : "Create"}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
@@ -355,26 +778,38 @@ const AdminMenu = () => {
             <DialogTitle>{isEditing ? "Edit" : "Add"} Category</DialogTitle>
           </DialogHeader>
           <div className="space-y-4">
-            <div className="space-y-2">
-              <Label>Name (English)</Label>
-              <Input value={editingCategory.name || ""} onChange={(e) => setEditingCategory({ ...editingCategory, name: e.target.value })} />
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Name (English) *</Label>
+                <Input value={editingCategory.name || ""} onChange={(e) => setEditingCategory({ ...editingCategory, name: e.target.value })} />
+              </div>
+              <div className="space-y-2">
+                <Label>Name (Turkish)</Label>
+                <Input value={editingCategory.name_tr || ""} onChange={(e) => setEditingCategory({ ...editingCategory, name_tr: e.target.value })} />
+              </div>
             </div>
             <div className="space-y-2">
-              <Label>Name (Turkish)</Label>
-              <Input value={editingCategory.name_tr || ""} onChange={(e) => setEditingCategory({ ...editingCategory, name_tr: e.target.value })} />
+              <Label>Description (English)</Label>
+              <Textarea value={editingCategory.description || ""} onChange={(e) => setEditingCategory({ ...editingCategory, description: e.target.value })} rows={2} />
             </div>
             <div className="space-y-2">
-              <Label>Sort Order</Label>
-              <Input type="number" value={editingCategory.sort_order || 0} onChange={(e) => setEditingCategory({ ...editingCategory, sort_order: parseInt(e.target.value) })} />
+              <Label>Description (Turkish)</Label>
+              <Textarea value={editingCategory.description_tr || ""} onChange={(e) => setEditingCategory({ ...editingCategory, description_tr: e.target.value })} rows={2} />
             </div>
-            <div className="flex items-center gap-2">
-              <Switch checked={editingCategory.is_active} onCheckedChange={(v) => setEditingCategory({ ...editingCategory, is_active: v })} />
-              <Label>Active</Label>
+            <div className="grid grid-cols-2 gap-4">
+              <div className="space-y-2">
+                <Label>Sort Order</Label>
+                <Input type="number" value={editingCategory.sort_order || 0} onChange={(e) => setEditingCategory({ ...editingCategory, sort_order: parseInt(e.target.value) })} />
+              </div>
+              <div className="flex items-center gap-2 pt-6">
+                <Switch checked={editingCategory.is_active} onCheckedChange={(v) => setEditingCategory({ ...editingCategory, is_active: v })} />
+                <Label>Active</Label>
+              </div>
             </div>
           </div>
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsCategoryDialogOpen(false)}>Cancel</Button>
-            <Button onClick={saveCategory}>{isEditing ? "Update" : "Create"}</Button>
+            <Button onClick={saveCategory} disabled={!editingCategory.name}>{isEditing ? "Update" : "Create"}</Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
