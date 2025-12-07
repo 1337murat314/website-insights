@@ -12,7 +12,7 @@ interface CartDrawerProps {
 
 const CartDrawer = ({ isOpen, onClose }: CartDrawerProps) => {
   const { language, t } = useLanguage();
-  const { items, removeItem, updateQuantity, getSubtotal, getTax, getTotal, getTotalItems } = useCart();
+  const { items, removeItem, updateQuantity, getTotal, getTotalItems } = useCart();
 
   return (
     <AnimatePresence>
@@ -156,19 +156,9 @@ const CartDrawer = ({ isOpen, onClose }: CartDrawerProps) => {
             {items.length > 0 && (
               <div className="p-6 border-t border-border bg-card space-y-4">
                 {/* Totals */}
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between text-muted-foreground">
-                    <span>{t("Subtotal", "Ara Toplam")}</span>
-                    <span>₺{getSubtotal().toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between text-muted-foreground">
-                    <span>{t("Tax (8%)", "KDV (%8)")}</span>
-                    <span>₺{getTax().toFixed(2)}</span>
-                  </div>
-                  <div className="flex justify-between text-lg font-bold text-foreground pt-2 border-t border-border">
-                    <span>{t("Total", "Toplam")}</span>
-                    <span className="text-primary">₺{getTotal().toFixed(2)}</span>
-                  </div>
+                <div className="flex justify-between text-lg font-bold text-foreground">
+                  <span>{t("Total", "Toplam")}</span>
+                  <span className="text-primary">₺{getTotal().toFixed(2)}</span>
                 </div>
 
                 {/* Checkout Button */}
