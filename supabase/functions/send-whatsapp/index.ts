@@ -33,23 +33,43 @@ function checkRateLimit(ip: string): boolean {
 }
 
 function validatePhoneNumber(phone: string): { valid: boolean; formatted: string; error?: string } {
-  // Remove all non-digit characters
-  const formattedPhone = phone.replace(/\D/g, '');
+  // Remove all non-digit characters except leading +
+  let cleanedPhone = phone.replace(/[^\d+]/g, '');
+  
+  // Remove leading + if present
+  if (cleanedPhone.startsWith('+')) {
+    cleanedPhone = cleanedPhone.substring(1);
+  }
+  
+  // Remove any remaining non-digits
+  cleanedPhone = cleanedPhone.replace(/\D/g, '');
   
   // Validate length (international phone numbers are typically 10-15 digits)
-  if (formattedPhone.length < 10) {
+  if (cleanedPhone.length < 10) {
     return { valid: false, formatted: '', error: 'Phone number too short' };
   }
   
-  if (formattedPhone.length > 15) {
+  if (cleanedPhone.length > 15) {
     return { valid: false, formatted: '', error: 'Phone number too long' };
   }
   
-  // Add Turkey country code if not present and appears to be a local number
-  let finalPhone = formattedPhone;
-  if (!formattedPhone.startsWith('90') && formattedPhone.length === 10) {
-    finalPhone = '90' + formattedPhone;
+  // Handle Turkey numbers
+  // If starts with 90, keep as is
+  // If starts with 0 and is 11 digits (0xxx xxx xxxx), remove leading 0 and add 90
+  // If 10 digits without country code, add 90
+  let finalPhone = cleanedPhone;
+  
+  if (cleanedPhone.startsWith('90')) {
+    finalPhone = cleanedPhone;
+  } else if (cleanedPhone.startsWith('0') && cleanedPhone.length === 11) {
+    // Turkish local format: 0xxx xxx xxxx
+    finalPhone = '90' + cleanedPhone.substring(1);
+  } else if (cleanedPhone.length === 10 && !cleanedPhone.startsWith('90')) {
+    // Assume Turkish number without country code
+    finalPhone = '90' + cleanedPhone;
   }
+  
+  console.log(`Phone formatting: original="${phone}", cleaned="${cleanedPhone}", final="${finalPhone}"`);
   
   return { valid: true, formatted: finalPhone };
 }
@@ -153,11 +173,12 @@ const handler = async (req: Request): Promise<Response> => {
 
     const responseData = await response.json();
     
-    // Log success/failure without sensitive data
-    console.log(`WhatsApp API response status: ${response.ok ? 'success' : 'failed'}`);
+    // Log detailed response for debugging
+    console.log(`WhatsApp API response: status=${response.status}, ok=${response.ok}, data=${JSON.stringify(responseData)}`);
 
     if (!response.ok) {
-      throw new Error(`Green API error: ${response.status}`);
+      console.error(`Green API error details: status=${response.status}, response=${JSON.stringify(responseData)}`);
+      throw new Error(`Green API error: ${response.status} - ${JSON.stringify(responseData)}`);
     }
 
     return new Response(JSON.stringify({ success: true, data: responseData }), {
