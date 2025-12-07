@@ -79,13 +79,12 @@ const AdminLeads = () => {
   }, [searchQuery, leads]);
 
   const exportToCSV = () => {
-    const headers = ["Name", "Email", "Phone", "Party Size", "Date", "Time", "Status", "Special Requests", "Created At"];
+    const headers = ["Name", "Phone", "Party Size", "Date", "Time", "Status", "Special Requests", "Created At"];
     const csvContent = [
       headers.join(","),
       ...leads.map((lead) =>
         [
           `"${lead.guest_name}"`,
-          `"${lead.guest_email}"`,
           `"${lead.guest_phone || ""}"`,
           lead.party_size,
           lead.reservation_date,
@@ -105,7 +104,9 @@ const AdminLeads = () => {
     toast.success(t("Leads exported successfully", "Müşteri adayları başarıyla dışa aktarıldı"));
   };
 
-  const uniqueEmails = new Set(leads.map((l) => l.guest_email)).size;
+  // Filter out placeholder emails
+  const hasRealEmail = (email: string) => email && email !== "-" && !email.includes("@noemail.com");
+  const uniqueEmails = new Set(leads.filter(l => hasRealEmail(l.guest_email)).map((l) => l.guest_email)).size;
   const todayLeads = leads.filter(
     (l) => format(new Date(l.created_at), "yyyy-MM-dd") === format(new Date(), "yyyy-MM-dd")
   ).length;
@@ -226,12 +227,14 @@ const AdminLeads = () => {
                         </div>
                       </td>
                       <td className="py-4">
-                        <div className="flex items-center gap-1 text-sm">
-                          <Mail className="h-3 w-3" />
-                          <a href={`mailto:${lead.guest_email}`} className="text-primary hover:underline">
-                            {lead.guest_email}
-                          </a>
-                        </div>
+                        {hasRealEmail(lead.guest_email) && (
+                          <div className="flex items-center gap-1 text-sm">
+                            <Mail className="h-3 w-3" />
+                            <a href={`mailto:${lead.guest_email}`} className="text-primary hover:underline">
+                              {lead.guest_email}
+                            </a>
+                          </div>
+                        )}
                         {lead.guest_phone && (
                           <div className="flex items-center gap-1 text-sm text-muted-foreground">
                             <Phone className="h-3 w-3" />
