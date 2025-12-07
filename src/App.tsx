@@ -36,6 +36,7 @@ import AdminAuditLogs from "./pages/admin/AdminAuditLogs";
 import AdminOrders from "./pages/admin/AdminOrders";
 import AdminQRCodes from "./pages/admin/AdminQRCodes";
 import AdminKDS from "./pages/admin/AdminKDS";
+import AdminWaiter from "./pages/admin/AdminWaiter";
 
 const queryClient = new QueryClient();
 
@@ -67,6 +68,7 @@ const AnimatedRoutes = () => {
         <Route path="/admin" element={<AdminLayout />}>
           <Route index element={<AdminDashboard />} />
           <Route path="orders" element={<AdminOrders />} />
+          <Route path="waiter" element={<AdminWaiter />} />
           <Route path="kds" element={<AdminKDS />} />
           <Route path="reservations" element={<AdminReservations />} />
           <Route path="leads" element={<AdminLeads />} />
