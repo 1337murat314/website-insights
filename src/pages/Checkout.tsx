@@ -11,6 +11,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { toast } from "sonner";
+import { logOrderCreated } from "@/lib/auditLogger";
 
 type PaymentMethod = "cash_at_table" | "card_at_table";
 
@@ -81,6 +82,15 @@ const Checkout = () => {
       const { error: itemsError } = await supabase.from("order_items").insert(orderItems);
 
       if (itemsError) throw itemsError;
+
+      // Log order creation to audit
+      await logOrderCreated(orderData.id, {
+        order_number: orderData.order_number,
+        table_number: tableNumber,
+        total: getTotal(),
+        payment_method: formData.paymentMethod,
+        item_count: items.length,
+      });
 
       clearCart();
       toast.success(t("Order placed successfully!", "Siparişiniz başarıyla alındı!"));

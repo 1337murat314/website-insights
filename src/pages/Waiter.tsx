@@ -52,6 +52,15 @@ import {
 import { format } from "date-fns";
 import { playNotificationSound } from "@/lib/notificationSound";
 import { Input } from "@/components/ui/input";
+import { 
+  logOrderServed, 
+  logOrderCompleted, 
+  logOrderCancelled, 
+  logOrderItemUpdated, 
+  logOrderItemDeleted, 
+  logTableClosed,
+  logServiceRequest 
+} from "@/lib/auditLogger";
 
 interface StaffSession {
   id: string;
@@ -256,6 +265,7 @@ const Waiter = () => {
   }, [staffSession, fetchOrders, fetchServiceRequests, soundEnabled]);
 
   const markAsServed = async (orderId: string) => {
+    const order = orders.find(o => o.id === orderId);
     const { error } = await supabase
       .from("orders")
       .update({ status: "served" })
@@ -265,11 +275,16 @@ const Waiter = () => {
       toast({ title: t("Error", "Hata"), description: error.message, variant: "destructive" });
       return;
     }
+    
+    // Log to audit
+    await logOrderServed(orderId, order?.order_number, order?.table_number);
+    
     toast({ title: t("Success", "Başarılı"), description: t("Order marked as served", "Sipariş servis edildi") });
     fetchOrders();
   };
 
   const acknowledgeRequest = async (requestId: string) => {
+    const request = serviceRequests.find(r => r.id === requestId);
     const { error } = await supabase
       .from("service_requests")
       .update({ status: "completed" })
@@ -278,6 +293,10 @@ const Waiter = () => {
     if (error) {
       toast({ title: t("Error", "Hata"), description: error.message, variant: "destructive" });
     } else {
+      // Log to audit
+      if (request) {
+        await logServiceRequest(requestId, request.request_type, request.table_number, 'completed');
+      }
       toast({ title: t("Success", "Başarılı"), description: t("Request acknowledged", "İstek onaylandı") });
       fetchServiceRequests();
     }
@@ -288,11 +307,16 @@ const Waiter = () => {
       o => o.table_number === tableNumber && !["completed", "cancelled"].includes(o.status)
     );
 
+    const totalAmount = tableOrders.reduce((sum, o) => sum + o.total, 0);
+
     for (const order of tableOrders) {
       await supabase
         .from("orders")
         .update({ status: "completed" })
         .eq("id", order.id);
+      
+      // Log each order completion
+      await logOrderCompleted(order.id, order.order_number, order.table_number);
     }
 
     await supabase
@@ -300,6 +324,9 @@ const Waiter = () => {
       .update({ status: "completed" })
       .eq("table_number", tableNumber)
       .eq("status", "pending");
+
+    // Log table closure
+    await logTableClosed(tableNumber, totalAmount, tableOrders.length);
 
     toast({ 
       title: t("Table Closed", "Masa Kapatıldı"), 
@@ -319,6 +346,7 @@ const Waiter = () => {
     const item = order?.items.find(i => i.id === itemId);
     if (!item) return;
 
+    const oldQuantity = item.quantity;
     const newTotalPrice = item.unit_price * newQuantity;
     
     const { error } = await supabase
@@ -330,6 +358,9 @@ const Waiter = () => {
       toast({ title: t("Error", "Hata"), description: error.message, variant: "destructive" });
       return;
     }
+
+    // Log item update to audit
+    await logOrderItemUpdated(itemId, item.item_name, oldQuantity, newQuantity);
 
     // Recalculate order total
     const { data: updatedItems } = await supabase
@@ -350,6 +381,9 @@ const Waiter = () => {
   };
 
   const deleteItem = async (orderId: string, itemId: string) => {
+    const order = orders.find(o => o.id === orderId);
+    const item = order?.items.find(i => i.id === itemId);
+    
     const { error } = await supabase
       .from("order_items")
       .delete()
@@ -358,6 +392,11 @@ const Waiter = () => {
     if (error) {
       toast({ title: t("Error", "Hata"), description: error.message, variant: "destructive" });
       return;
+    }
+
+    // Log item deletion to audit
+    if (item) {
+      await logOrderItemDeleted(itemId, item.item_name, item.quantity);
     }
 
     // Recalculate order total
@@ -383,6 +422,7 @@ const Waiter = () => {
   };
 
   const cancelOrder = async (orderId: string) => {
+    const order = orders.find(o => o.id === orderId);
     const { error } = await supabase
       .from("orders")
       .update({ status: "cancelled" })
@@ -392,6 +432,9 @@ const Waiter = () => {
       toast({ title: t("Error", "Hata"), description: error.message, variant: "destructive" });
       return;
     }
+
+    // Log order cancellation to audit
+    await logOrderCancelled(orderId, order?.order_number, order?.table_number);
 
     toast({ title: t("Success", "Başarılı"), description: t("Order cancelled", "Sipariş iptal edildi") });
     fetchOrders();

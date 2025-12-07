@@ -81,17 +81,20 @@ const AdminAuditLogs = () => {
   const uniqueTables = [...new Set(logs.map((log) => log.table_name))];
 
   const getActionBadge = (action: string) => {
-    switch (action.toLowerCase()) {
-      case "create":
-      case "insert":
-        return <Badge className="bg-green-500/10 text-green-500">Create</Badge>;
-      case "update":
-        return <Badge className="bg-blue-500/10 text-blue-500">Update</Badge>;
-      case "delete":
-        return <Badge className="bg-destructive/10 text-destructive">Delete</Badge>;
-      default:
-        return <Badge variant="outline">{action}</Badge>;
+    const actionLower = action.toLowerCase();
+    if (actionLower.includes('created') || actionLower.includes('insert') || actionLower === 'create') {
+      return <Badge className="bg-green-500/10 text-green-500">{action.replace(/_/g, ' ')}</Badge>;
     }
+    if (actionLower.includes('updated') || actionLower.includes('changed') || actionLower === 'update') {
+      return <Badge className="bg-blue-500/10 text-blue-500">{action.replace(/_/g, ' ')}</Badge>;
+    }
+    if (actionLower.includes('deleted') || actionLower.includes('cancelled') || actionLower === 'delete') {
+      return <Badge className="bg-destructive/10 text-destructive">{action.replace(/_/g, ' ')}</Badge>;
+    }
+    if (actionLower.includes('served') || actionLower.includes('completed') || actionLower.includes('closed')) {
+      return <Badge className="bg-primary/10 text-primary">{action.replace(/_/g, ' ')}</Badge>;
+    }
+    return <Badge variant="outline">{action.replace(/_/g, ' ')}</Badge>;
   };
 
   const logStats = {
