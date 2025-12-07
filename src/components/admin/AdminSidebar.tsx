@@ -15,6 +15,7 @@ import {
   PartyPopper,
   ScrollText,
   Globe,
+  ShoppingBag,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -26,6 +27,7 @@ import GlobalSearch from "./GlobalSearch";
 
 const getNavItems = (t: (en: string, tr: string) => string) => [
   { path: "/admin", label: t("Dashboard", "Kontrol Paneli"), icon: LayoutDashboard, exact: true },
+  { path: "/admin/orders", label: t("Orders", "Siparişler"), icon: ShoppingBag },
   { path: "/admin/reservations", label: t("Reservations", "Rezervasyonlar"), icon: CalendarDays },
   { path: "/admin/guests", label: t("Guest CRM", "Misafir CRM"), icon: Crown },
   { path: "/admin/menu", label: t("Menu", "Menü"), icon: UtensilsCrossed },

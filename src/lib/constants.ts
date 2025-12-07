@@ -201,10 +201,11 @@ export const NAV_LINKS = [
   { href: "/", labelEn: "Home", labelTr: "Ana Sayfa" },
   { href: "/menu", labelEn: "Menu", labelTr: "Menü" },
   { href: "/order", labelEn: "Order Online", labelTr: "Online Sipariş" },
-  { href: "/gallery", labelEn: "Gallery", labelTr: "Galeri" },
-  { href: "/locations", labelEn: "Locations", labelTr: "Şubeler" },
-  { href: "/about", labelEn: "About", labelTr: "Hakkımızda" },
   { href: "/reservations", labelEn: "Reservations", labelTr: "Rezervasyon" },
+  { href: "/gallery", labelEn: "Gallery", labelTr: "Galeri" },
+  { href: "/about", labelEn: "About", labelTr: "Hakkımızda" },
+  { href: "/contact", labelEn: "Contact", labelTr: "İletişim" },
+  { href: "/locations", labelEn: "Locations", labelTr: "Şubeler" },
 ];
 
 // Testimonials

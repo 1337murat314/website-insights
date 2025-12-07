@@ -106,7 +106,18 @@ const HeroSection = () => {
                   size="lg"
                   className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold px-8 py-7 text-base rounded-full group w-full sm:w-auto"
                 >
-                  {t("Reserve Your Table", "Masanızı Ayırtın")}
+                  {t("Book a Table", "Masa Ayırt")}
+                  <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
+                </Button>
+              </motion.div>
+            </Link>
+            <Link to="/order">
+              <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                <Button
+                  size="lg"
+                  className="bg-accent hover:bg-accent/90 text-accent-foreground font-semibold px-8 py-7 text-base rounded-full group w-full sm:w-auto"
+                >
+                  {t("Order Online", "Online Sipariş")}
                   <ArrowRight className="ml-2 w-5 h-5 group-hover:translate-x-1 transition-transform" />
                 </Button>
               </motion.div>
