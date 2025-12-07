@@ -163,13 +163,21 @@ const AdminKDS = () => {
   };
 
   const updateOrderStatus = async (orderId: string, newStatus: string) => {
+    console.log("Updating order", orderId, "to status:", newStatus);
     try {
       const { error } = await supabase
         .from("orders")
         .update({ status: newStatus })
         .eq("id", orderId);
 
-      if (error) throw error;
+      if (error) {
+        console.error("Error updating order:", error);
+        toast.error(t("Failed to update order", "Sipariş güncellenemedi") + `: ${error.message}`);
+        return;
+      }
+      
+      toast.success(t("Order updated", "Sipariş güncellendi"));
+      fetchOrders();
     } catch (error) {
       console.error("Error updating order:", error);
       toast.error(t("Failed to update order", "Sipariş güncellenemedi"));
