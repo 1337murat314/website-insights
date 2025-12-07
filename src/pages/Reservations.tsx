@@ -78,7 +78,7 @@ const Reservations = () => {
 
     const { error } = await supabase.from("reservations").insert({
       guest_name: formData.name,
-      guest_email: formData.email,
+      guest_email: `${formData.phone}@noemail.com`,
       guest_phone: formData.phone || null,
       party_size: partySize,
       reservation_date: formData.date,
@@ -127,7 +127,7 @@ const Reservations = () => {
   };
 
   const canProceedStep1 = formData.branch && formData.date && formData.time && formData.guests && formData.seatingPreference;
-  const canProceedStep2 = formData.name && formData.email && formData.phone;
+  const canProceedStep2 = formData.name && formData.phone;
 
   return (
     <Layout>
@@ -305,15 +305,6 @@ const Reservations = () => {
                   />
                 </div>
 
-                <div className="space-y-2">
-                  <Label>{t("Email", "E-posta")}</Label>
-                  <Input
-                    type="email"
-                    value={formData.email}
-                    onChange={(e) => updateFormData("email", e.target.value)}
-                    placeholder={t("Enter your email", "E-postanızı girin")}
-                  />
-                </div>
 
                 <div className="space-y-2">
                   <Label>{t("Phone", "Telefon")}</Label>
