@@ -7,6 +7,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { toast } from "sonner";
+import logoImage from "@/assets/logo.png";
 
 interface Table {
   id: string;
@@ -48,46 +49,93 @@ const AdminQRCodes = () => {
     return `${baseUrl}/order?table=${tableNumber}`;
   };
 
-  const downloadQRCode = (tableNumber: string) => {
+  const downloadQRCode = async (tableNumber: string) => {
     const svg = document.getElementById(`qr-${tableNumber}`);
     if (!svg) return;
 
     const svgData = new XMLSerializer().serializeToString(svg);
     const canvas = document.createElement("canvas");
     const ctx = canvas.getContext("2d");
-    const img = new Image();
+    const qrImg = new Image();
+    const logoImg = new Image();
 
-    img.onload = () => {
+    // Load both images
+    const loadImage = (img: HTMLImageElement, src: string): Promise<void> => {
+      return new Promise((resolve, reject) => {
+        img.onload = () => resolve();
+        img.onerror = reject;
+        img.src = src;
+      });
+    };
+
+    try {
+      await Promise.all([
+        loadImage(qrImg, "data:image/svg+xml;base64," + btoa(svgData)),
+        loadImage(logoImg, logoImage)
+      ]);
+
       canvas.width = 400;
-      canvas.height = 480;
+      canvas.height = 520;
       
       if (ctx) {
-        // White background
-        ctx.fillStyle = "#ffffff";
+        // Gradient background
+        const gradient = ctx.createLinearGradient(0, 0, 0, canvas.height);
+        gradient.addColorStop(0, "#1a1a1a");
+        gradient.addColorStop(1, "#2d2d2d");
+        ctx.fillStyle = gradient;
         ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        // Decorative top accent
+        ctx.fillStyle = "#E07A5F";
+        ctx.fillRect(0, 0, canvas.width, 6);
+
+        // Logo at top
+        const logoWidth = 120;
+        const logoHeight = 40;
+        ctx.drawImage(logoImg, (canvas.width - logoWidth) / 2, 20, logoWidth, logoHeight);
+
+        // White container for QR
+        ctx.fillStyle = "#ffffff";
+        const qrContainerX = 40;
+        const qrContainerY = 75;
+        const qrContainerSize = 320;
+        ctx.beginPath();
+        ctx.roundRect(qrContainerX, qrContainerY, qrContainerSize, qrContainerSize, 16);
+        ctx.fill();
         
         // Draw QR code
-        ctx.drawImage(img, 50, 50, 300, 300);
-        
-        // Add table number text
-        ctx.fillStyle = "#1a1a1a";
-        ctx.font = "bold 36px Arial";
+        ctx.drawImage(qrImg, 60, 95, 280, 280);
+
+        // Table number with accent color
+        ctx.fillStyle = "#E07A5F";
+        ctx.font = "bold 14px 'Arial'";
         ctx.textAlign = "center";
-        ctx.fillText(`Table ${tableNumber}`, canvas.width / 2, 420);
+        ctx.fillText("CALIFORIAN RESTAURANT", canvas.width / 2, 420);
+
+        // Table number
+        ctx.fillStyle = "#F5E6D3";
+        ctx.font = "bold 32px 'Georgia'";
+        ctx.fillText(`Table ${tableNumber}`, canvas.width / 2, 460);
         
-        ctx.font = "16px Arial";
-        ctx.fillStyle = "#666666";
-        ctx.fillText("Scan to Order", canvas.width / 2, 455);
+        // Scan instruction
+        ctx.font = "14px 'Arial'";
+        ctx.fillStyle = "#888888";
+        ctx.fillText("Scan to view menu & order", canvas.width / 2, 490);
+
+        // Bottom accent
+        ctx.fillStyle = "#E07A5F";
+        ctx.fillRect(0, canvas.height - 6, canvas.width, 6);
       }
 
       const pngFile = canvas.toDataURL("image/png");
       const downloadLink = document.createElement("a");
-      downloadLink.download = `table-${tableNumber}-qr.png`;
+      downloadLink.download = `califorian-table-${tableNumber}-qr.png`;
       downloadLink.href = pngFile;
       downloadLink.click();
-    };
-
-    img.src = "data:image/svg+xml;base64," + btoa(svgData);
+    } catch (error) {
+      console.error("Error generating QR:", error);
+      toast.error(t("Failed to download QR code", "QR kod indirilemedi"));
+    }
   };
 
   const printAllQRCodes = () => {
@@ -106,28 +154,50 @@ const AdminQRCodes = () => {
         <head>
           <title>Table QR Codes - Califorian Restaurant</title>
           <style>
+            @import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@700&display=swap');
             * { margin: 0; padding: 0; box-sizing: border-box; }
-            body { font-family: Arial, sans-serif; }
+            body { font-family: Arial, sans-serif; background: #f5f5f5; }
             .grid { 
               display: grid; 
               grid-template-columns: repeat(2, 1fr); 
-              gap: 20px; 
-              padding: 20px;
+              gap: 24px; 
+              padding: 24px;
             }
             .qr-card {
-              border: 2px solid #ddd;
-              border-radius: 12px;
+              background: linear-gradient(180deg, #1a1a1a 0%, #2d2d2d 100%);
+              border-radius: 16px;
               padding: 24px;
               text-align: center;
               page-break-inside: avoid;
+              border-top: 4px solid #E07A5F;
+              border-bottom: 4px solid #E07A5F;
             }
-            .qr-card svg { margin-bottom: 16px; }
-            .table-number { font-size: 28px; font-weight: bold; margin-bottom: 4px; }
-            .scan-text { font-size: 14px; color: #666; margin-bottom: 8px; }
-            .url-text { font-size: 10px; color: #999; word-break: break-all; }
+            .qr-wrapper {
+              background: #ffffff;
+              border-radius: 12px;
+              padding: 16px;
+              display: inline-block;
+              margin-bottom: 16px;
+            }
+            .qr-card svg { display: block; }
+            .brand-text { 
+              font-size: 12px; 
+              font-weight: bold; 
+              color: #E07A5F; 
+              letter-spacing: 2px;
+              margin-bottom: 8px;
+            }
+            .table-number { 
+              font-family: 'Playfair Display', Georgia, serif;
+              font-size: 28px; 
+              font-weight: bold; 
+              color: #F5E6D3;
+              margin-bottom: 8px; 
+            }
+            .scan-text { font-size: 12px; color: #888; }
             @media print {
+              body { background: white; }
               .grid { grid-template-columns: repeat(2, 1fr); }
-              .qr-card { border: 1px solid #000; }
             }
           </style>
         </head>
@@ -135,10 +205,12 @@ const AdminQRCodes = () => {
           <div class="grid">
             ${tables.map(table => `
               <div class="qr-card">
-                ${document.getElementById(`qr-${table.table_number}`)?.outerHTML || ''}
+                <div class="qr-wrapper">
+                  ${document.getElementById(`qr-${table.table_number}`)?.outerHTML || ''}
+                </div>
+                <div class="brand-text">CALIFORIAN RESTAURANT</div>
                 <div class="table-number">Table ${table.table_number}</div>
-                <div class="scan-text">Scan to Order / Sipariş için tarayın</div>
-                <div class="url-text">${getOrderUrl(table.table_number)}</div>
+                <div class="scan-text">Scan to view menu & order</div>
               </div>
             `).join('')}
           </div>
@@ -212,23 +284,36 @@ const AdminQRCodes = () => {
       {/* QR Codes Grid */}
       <div ref={printRef} className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-6">
         {tables.map((table) => (
-          <Card key={table.id} className="overflow-hidden hover:shadow-lg transition-shadow">
+          <Card key={table.id} className="overflow-hidden hover:shadow-lg transition-shadow bg-gradient-to-b from-charcoal to-charcoal/90 border-t-4 border-t-primary border-b-4 border-b-primary">
             <CardContent className="p-6 text-center">
               {/* QR Code */}
-              <div className="bg-white p-4 rounded-lg mb-4 inline-block">
+              <div className="bg-white p-4 rounded-xl mb-4 inline-block shadow-md">
                 <QRCodeSVG
                   id={`qr-${table.table_number}`}
                   value={getOrderUrl(table.table_number)}
-                  size={180}
+                  size={160}
                   level="H"
                   includeMargin
                   fgColor="#1a1a1a"
                   bgColor="#ffffff"
+                  imageSettings={{
+                    src: logoImage,
+                    x: undefined,
+                    y: undefined,
+                    height: 32,
+                    width: 32,
+                    excavate: true,
+                  }}
                 />
               </div>
 
+              {/* Brand text */}
+              <p className="text-xs font-bold text-primary tracking-widest mb-2">
+                CALIFORIAN RESTAURANT
+              </p>
+
               {/* Table Info */}
-              <h3 className="text-xl font-bold mb-1">
+              <h3 className="text-2xl font-serif font-bold mb-1 text-cream">
                 {t("Table", "Masa")} {table.table_number}
               </h3>
               <p className="text-sm text-muted-foreground mb-1">
@@ -238,9 +323,9 @@ const AdminQRCodes = () => {
                 <p className="text-xs text-muted-foreground mb-3">{table.location}</p>
               )}
 
-              {/* URL Preview */}
-              <p className="text-xs text-muted-foreground bg-secondary p-2 rounded mb-4 break-all">
-                {getOrderUrl(table.table_number)}
+              {/* Scan instruction */}
+              <p className="text-xs text-muted-foreground mb-4">
+                {t("Scan to view menu & order", "Menü ve sipariş için tarayın")}
               </p>
 
               {/* Download Button */}
