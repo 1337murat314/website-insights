@@ -46,7 +46,8 @@ import {
   Trash2,
   Edit,
   Minus,
-  Plus
+  Plus,
+  Globe
 } from "lucide-react";
 import { format } from "date-fns";
 import { playNotificationSound } from "@/lib/notificationSound";
@@ -115,7 +116,7 @@ const Waiter = () => {
   const [editQuantity, setEditQuantity] = useState(1);
   const [deleteConfirm, setDeleteConfirm] = useState<{ orderId: string; itemId: string } | null>(null);
   const { toast } = useToast();
-  const { t, language } = useLanguage();
+  const { t, language, setLanguage } = useLanguage();
   const navigate = useNavigate();
 
   useEffect(() => {
@@ -459,6 +460,14 @@ const Waiter = () => {
               className={`h-9 w-9 ${soundEnabled ? "text-green-500" : ""}`}
             >
               {soundEnabled ? <Volume2 className="w-4 h-4" /> : <VolumeX className="w-4 h-4" />}
+            </Button>
+            <Button 
+              onClick={() => setLanguage(language === "en" ? "tr" : "en")} 
+              variant="ghost" 
+              size="icon" 
+              className="h-9 w-9"
+            >
+              <Globe className="w-4 h-4" />
             </Button>
             <Button onClick={toggleFullscreen} variant="ghost" size="icon" className="h-9 w-9">
               {isFullscreen ? <Minimize className="w-4 h-4" /> : <Maximize className="w-4 h-4" />}
