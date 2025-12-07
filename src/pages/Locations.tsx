@@ -46,63 +46,63 @@ const Locations = () => {
       {/* Locations */}
       <section className="section-padding bg-background">
         <div className="container mx-auto container-padding">
-          <div className="space-y-16">
+          <div className="space-y-12">
             {BRANCHES.map((branch, index) => (
               <div
                 key={branch.id}
-                className="grid lg:grid-cols-2 gap-8 items-stretch"
+                className="grid md:grid-cols-2 gap-6 items-stretch"
               >
                 {/* Info Card */}
-                <div className={`bg-card rounded-2xl overflow-hidden shadow-lg ${index % 2 === 1 ? 'lg:order-2' : ''}`}>
+                <div className={`bg-card rounded-2xl overflow-hidden shadow-lg flex flex-col ${index % 2 === 1 ? 'md:order-2' : ''}`}>
                   {/* Image */}
-                  <div className="relative h-64 overflow-hidden">
+                  <div className="relative h-48 overflow-hidden">
                     <img
                       src={branchImages[branch.id]}
                       alt={branch.name}
                       className="w-full h-full object-cover"
                     />
                     <div className="absolute inset-0 bg-gradient-to-t from-charcoal/80 to-transparent" />
-                    <h3 className="absolute bottom-4 left-6 font-serif text-3xl font-bold text-cream">
+                    <h3 className="absolute bottom-4 left-6 font-serif text-2xl font-bold text-cream">
                       {branch.name}
                     </h3>
                   </div>
 
                   {/* Content */}
-                  <div className="p-6 space-y-4">
+                  <div className="p-5 space-y-3 flex-1">
                     <div className="flex items-start gap-3">
-                      <MapPin className="text-primary mt-1 flex-shrink-0" size={20} />
-                      <p className="text-foreground">{branch.address}</p>
+                      <MapPin className="text-primary mt-1 flex-shrink-0" size={18} />
+                      <p className="text-foreground text-sm">{branch.address}</p>
                     </div>
 
                     <div className="flex items-center gap-3">
-                      <Phone className="text-primary flex-shrink-0" size={20} />
+                      <Phone className="text-primary flex-shrink-0" size={18} />
                       <a
                         href={`tel:${branch.phone}`}
-                        className="text-foreground hover:text-primary transition-colors"
+                        className="text-foreground hover:text-primary transition-colors text-sm"
                       >
                         392 444 7070
                       </a>
                     </div>
 
                     <div className="flex items-center gap-3">
-                      <Clock className="text-primary flex-shrink-0" size={20} />
-                      <p className="text-foreground">{branch.hours}</p>
+                      <Clock className="text-primary flex-shrink-0" size={18} />
+                      <p className="text-foreground text-sm">{branch.hours}</p>
                     </div>
 
-                    <div className="pt-4 flex gap-3">
+                    <div className="pt-3 flex gap-2">
                       <a
                         href={branch.mapUrl}
                         target="_blank"
                         rel="noopener noreferrer"
                         className="flex-1"
                       >
-                        <Button variant="outline" className="w-full group/btn">
+                        <Button variant="outline" size="sm" className="w-full group/btn">
                           {t("Get Directions", "Yol Tarifi")}
-                          <ExternalLink className="ml-2 group-hover/btn:translate-x-1 transition-transform" size={16} />
+                          <ExternalLink className="ml-2 group-hover/btn:translate-x-1 transition-transform" size={14} />
                         </Button>
                       </a>
                       <a href={`tel:${branch.phone}`} className="flex-1">
-                        <Button className="w-full bg-primary hover:bg-accent text-primary-foreground">
+                        <Button size="sm" className="w-full bg-primary hover:bg-accent text-primary-foreground">
                           {t("Call", "Ara")}
                         </Button>
                       </a>
@@ -111,12 +111,12 @@ const Locations = () => {
                 </div>
 
                 {/* Map */}
-                <div className={`rounded-2xl overflow-hidden shadow-lg h-full min-h-[400px] ${index % 2 === 1 ? 'lg:order-1' : ''}`}>
+                <div className={`rounded-2xl overflow-hidden shadow-lg min-h-[350px] ${index % 2 === 1 ? 'md:order-1' : ''}`}>
                   <iframe
                     src={branchMaps[branch.id]}
                     width="100%"
                     height="100%"
-                    style={{ border: 0, minHeight: '400px' }}
+                    style={{ border: 0, minHeight: '350px' }}
                     allowFullScreen
                     loading="lazy"
                     referrerPolicy="no-referrer-when-downgrade"
