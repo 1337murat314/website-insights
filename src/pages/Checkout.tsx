@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { motion } from "framer-motion";
 import { useNavigate } from "react-router-dom";
-import { CreditCard, Banknote, UtensilsCrossed, ShoppingBag, Truck, MapPin, Clock, CheckCircle2 } from "lucide-react";
+import { CreditCard, Banknote, ShoppingBag, CheckCircle2, UtensilsCrossed } from "lucide-react";
 import Layout from "@/components/layout/Layout";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useCart } from "@/contexts/CartContext";
@@ -13,13 +13,12 @@ import { Label } from "@/components/ui/label";
 import { RadioGroup, RadioGroupItem } from "@/components/ui/radio-group";
 import { toast } from "sonner";
 
-type OrderType = "dine-in" | "pickup" | "delivery";
 type PaymentMethod = "cash_at_table" | "card_at_table";
 
 const Checkout = () => {
   const { language, t } = useLanguage();
   const navigate = useNavigate();
-  const { items, getSubtotal, getTax, getTotal, clearCart } = useCart();
+  const { items, tableNumber, getSubtotal, getTax, getTotal, clearCart } = useCart();
   
   const [step, setStep] = useState(1);
   const [isSubmitting, setIsSubmitting] = useState(false);
@@ -29,12 +28,7 @@ const Checkout = () => {
     customerName: "",
     customerPhone: "",
     customerEmail: "",
-    orderType: "dine-in" as OrderType,
     paymentMethod: "cash_at_table" as PaymentMethod,
-    tableNumber: "",
-    deliveryAddress: "",
-    deliveryNotes: "",
-    pickupTime: "",
     notes: "",
   });
 
@@ -48,6 +42,11 @@ const Checkout = () => {
       return;
     }
 
+    if (!tableNumber) {
+      toast.error(t("No table selected. Please scan your table QR code.", "Masa seçilmedi. Lütfen masanızdaki QR kodu tarayın."));
+      return;
+    }
+
     setIsSubmitting(true);
     try {
       // Create order
@@ -57,18 +56,15 @@ const Checkout = () => {
           customer_name: formData.customerName,
           customer_phone: formData.customerPhone,
           customer_email: formData.customerEmail || null,
-          order_type: formData.orderType,
+          order_type: "dine-in",
           payment_method: formData.paymentMethod,
-          table_number: formData.orderType === "dine-in" ? formData.tableNumber : null,
-          delivery_address: formData.orderType === "delivery" ? formData.deliveryAddress : null,
-          delivery_notes: formData.orderType === "delivery" ? formData.deliveryNotes : null,
-          pickup_time: formData.orderType === "pickup" && formData.pickupTime ? new Date(formData.pickupTime).toISOString() : null,
+          table_number: tableNumber,
           subtotal: getSubtotal(),
           tax: getTax(),
           total: getTotal(),
           notes: formData.notes || null,
           status: "new",
-          estimated_prep_time: 30,
+          estimated_prep_time: 20,
         })
         .select("id, order_number")
         .single();
@@ -94,7 +90,7 @@ const Checkout = () => {
 
       setOrderNumber(orderData.order_number);
       clearCart();
-      setStep(4); // Success step
+      setStep(3); // Success step
       toast.success(t("Order placed successfully!", "Siparişiniz başarıyla alındı!"));
     } catch (error) {
       console.error("Error placing order:", error);
@@ -104,25 +100,36 @@ const Checkout = () => {
     }
   };
 
-  const orderTypes = [
-    { id: "dine-in", label: t("Dine In", "Restoranda"), icon: UtensilsCrossed },
-    { id: "pickup", label: t("Pickup", "Gel Al"), icon: ShoppingBag },
-    { id: "delivery", label: t("Delivery", "Teslimat"), icon: Truck },
-  ];
-
   const paymentMethods = [
     { id: "cash_at_table", label: t("Pay Cash at Table", "Masada Nakit Öde"), icon: Banknote },
     { id: "card_at_table", label: t("Pay Card at Table", "Masada Kart ile Öde"), icon: CreditCard },
   ];
 
   const canProceedStep1 = formData.customerName && formData.customerPhone;
-  const canProceedStep2 = formData.orderType && (
-    (formData.orderType === "dine-in") ||
-    (formData.orderType === "pickup") ||
-    (formData.orderType === "delivery" && formData.deliveryAddress)
-  );
 
-  if (items.length === 0 && step < 4) {
+  // Redirect if no table number
+  if (!tableNumber && step < 3) {
+    return (
+      <Layout>
+        <section className="min-h-[60vh] flex items-center justify-center">
+          <div className="text-center">
+            <UtensilsCrossed className="w-16 h-16 text-muted-foreground mx-auto mb-4" />
+            <h2 className="font-serif text-2xl font-bold mb-4">
+              {t("No Table Selected", "Masa Seçilmedi")}
+            </h2>
+            <p className="text-muted-foreground mb-6">
+              {t("Please scan the QR code on your table to place an order.", "Sipariş vermek için lütfen masanızdaki QR kodu tarayın.")}
+            </p>
+            <Button onClick={() => navigate("/order")}>
+              {t("Browse Menu", "Menüyü İncele")}
+            </Button>
+          </div>
+        </section>
+      </Layout>
+    );
+  }
+
+  if (items.length === 0 && step < 3) {
     return (
       <Layout>
         <section className="min-h-[60vh] flex items-center justify-center">
@@ -145,6 +152,15 @@ const Checkout = () => {
       {/* Hero */}
       <section className="relative py-24 bg-charcoal">
         <div className="container mx-auto container-padding relative text-center text-cream">
+          {/* Table Badge */}
+          {tableNumber && (
+            <div className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-6 py-3 rounded-full mb-4">
+              <UtensilsCrossed className="w-5 h-5" />
+              <span className="font-bold text-lg">
+                {t("Table", "Masa")} {tableNumber}
+              </span>
+            </div>
+          )}
           <h1 className="font-serif text-4xl md:text-5xl font-bold">
             {t("Checkout", "Sipariş Tamamla")}
           </h1>
@@ -155,7 +171,7 @@ const Checkout = () => {
       <section className="py-6 bg-secondary border-b border-border">
         <div className="container mx-auto container-padding">
           <div className="flex justify-center gap-4">
-            {[1, 2, 3].map((s) => (
+            {[1, 2].map((s) => (
               <div key={s} className="flex items-center">
                 <div
                   className={`w-8 h-8 rounded-full flex items-center justify-center font-bold text-sm ${
@@ -166,7 +182,7 @@ const Checkout = () => {
                 >
                   {step > s ? <CheckCircle2 className="w-5 h-5" /> : s}
                 </div>
-                {s < 3 && <div className={`w-12 h-0.5 ${step > s ? "bg-primary" : "bg-muted"}`} />}
+                {s < 2 && <div className={`w-12 h-0.5 ${step > s ? "bg-primary" : "bg-muted"}`} />}
               </div>
             ))}
           </div>
@@ -186,11 +202,11 @@ const Checkout = () => {
                   className="bg-card p-6 rounded-2xl"
                 >
                   <h2 className="font-serif text-2xl font-bold mb-6">
-                    {t("Contact Information", "İletişim Bilgileri")}
+                    {t("Your Details", "Bilgileriniz")}
                   </h2>
                   <div className="space-y-4">
                     <div>
-                      <Label htmlFor="name">{t("Full Name", "Ad Soyad")} *</Label>
+                      <Label htmlFor="name">{t("Your Name", "Adınız")} *</Label>
                       <Input
                         id="name"
                         value={formData.customerName}
@@ -231,110 +247,8 @@ const Checkout = () => {
                 </motion.div>
               )}
 
-              {/* Step 2: Order Type & Details */}
+              {/* Step 2: Payment & Review */}
               {step === 2 && (
-                <motion.div
-                  initial={{ opacity: 0, x: -20 }}
-                  animate={{ opacity: 1, x: 0 }}
-                  className="bg-card p-6 rounded-2xl"
-                >
-                  <h2 className="font-serif text-2xl font-bold mb-6">
-                    {t("Order Type", "Sipariş Tipi")}
-                  </h2>
-                  
-                  {/* Order Type Selection */}
-                  <div className="grid grid-cols-3 gap-4 mb-6">
-                    {orderTypes.map((type) => (
-                      <button
-                        key={type.id}
-                        onClick={() => updateFormData("orderType", type.id)}
-                        className={`p-4 rounded-xl border-2 transition-all ${
-                          formData.orderType === type.id
-                            ? "border-primary bg-primary/10"
-                            : "border-border hover:border-muted-foreground"
-                        }`}
-                      >
-                        <type.icon className={`w-8 h-8 mx-auto mb-2 ${
-                          formData.orderType === type.id ? "text-primary" : "text-muted-foreground"
-                        }`} />
-                        <p className="text-sm font-medium">{type.label}</p>
-                      </button>
-                    ))}
-                  </div>
-
-                  {/* Conditional Fields */}
-                  {formData.orderType === "dine-in" && (
-                    <div className="space-y-4">
-                      <div>
-                        <Label htmlFor="table">{t("Table Number", "Masa Numarası")} ({t("Optional", "Opsiyonel")})</Label>
-                        <Input
-                          id="table"
-                          value={formData.tableNumber}
-                          onChange={(e) => updateFormData("tableNumber", e.target.value)}
-                          placeholder={t("Enter table number if known", "Masa numarası")}
-                          className="mt-2"
-                        />
-                      </div>
-                    </div>
-                  )}
-
-                  {formData.orderType === "pickup" && (
-                    <div className="space-y-4">
-                      <div>
-                        <Label htmlFor="pickupTime">{t("Preferred Pickup Time", "Tercih Edilen Alış Saati")}</Label>
-                        <Input
-                          id="pickupTime"
-                          type="datetime-local"
-                          value={formData.pickupTime}
-                          onChange={(e) => updateFormData("pickupTime", e.target.value)}
-                          className="mt-2"
-                        />
-                      </div>
-                    </div>
-                  )}
-
-                  {formData.orderType === "delivery" && (
-                    <div className="space-y-4">
-                      <div>
-                        <Label htmlFor="address">{t("Delivery Address", "Teslimat Adresi")} *</Label>
-                        <Textarea
-                          id="address"
-                          value={formData.deliveryAddress}
-                          onChange={(e) => updateFormData("deliveryAddress", e.target.value)}
-                          placeholder={t("Enter your full address", "Tam adresinizi girin")}
-                          className="mt-2"
-                        />
-                      </div>
-                      <div>
-                        <Label htmlFor="deliveryNotes">{t("Delivery Notes", "Teslimat Notları")}</Label>
-                        <Input
-                          id="deliveryNotes"
-                          value={formData.deliveryNotes}
-                          onChange={(e) => updateFormData("deliveryNotes", e.target.value)}
-                          placeholder={t("Floor, door code, etc.", "Kat, kapı kodu, vb.")}
-                          className="mt-2"
-                        />
-                      </div>
-                    </div>
-                  )}
-
-                  <div className="flex gap-4 mt-6">
-                    <Button variant="outline" onClick={() => setStep(1)} className="flex-1">
-                      {t("Back", "Geri")}
-                    </Button>
-                    <Button
-                      onClick={() => setStep(3)}
-                      disabled={!canProceedStep2}
-                      className="flex-1 bg-primary hover:bg-primary/90"
-                    >
-                      {t("Continue", "Devam Et")}
-                    </Button>
-                  </div>
-                </motion.div>
-              )}
-
-              {/* Step 3: Payment & Review */}
-              {step === 3 && (
                 <motion.div
                   initial={{ opacity: 0, x: -20 }}
                   animate={{ opacity: 1, x: 0 }}
@@ -385,7 +299,7 @@ const Checkout = () => {
                   </div>
 
                   <div className="flex gap-4">
-                    <Button variant="outline" onClick={() => setStep(2)} className="flex-1">
+                    <Button variant="outline" onClick={() => setStep(1)} className="flex-1">
                       {t("Back", "Geri")}
                     </Button>
                     <Button
@@ -399,8 +313,8 @@ const Checkout = () => {
                 </motion.div>
               )}
 
-              {/* Step 4: Success */}
-              {step === 4 && (
+              {/* Step 3: Success */}
+              {step === 3 && (
                 <motion.div
                   initial={{ opacity: 0, scale: 0.95 }}
                   animate={{ opacity: 1, scale: 1 }}
@@ -413,58 +327,70 @@ const Checkout = () => {
                     {t("Order Confirmed!", "Sipariş Onaylandı!")}
                   </h2>
                   <p className="text-muted-foreground mb-6">
-                    {t("Thank you for your order. We're preparing it now.", "Siparişiniz için teşekkürler. Hazırlanıyor.")}
+                    {t(
+                      "Your order has been received and will be prepared shortly.",
+                      "Siparişiniz alındı ve kısa sürede hazırlanacak."
+                    )}
                   </p>
                   {orderNumber && (
-                    <div className="bg-background p-4 rounded-xl mb-6">
-                      <p className="text-sm text-muted-foreground">{t("Order Number", "Sipariş Numarası")}</p>
+                    <div className="bg-secondary p-4 rounded-xl mb-6">
+                      <p className="text-sm text-muted-foreground mb-1">
+                        {t("Order Number", "Sipariş Numarası")}
+                      </p>
                       <p className="text-3xl font-bold text-primary">#{orderNumber}</p>
                     </div>
                   )}
-                  <div className="flex items-center justify-center gap-2 text-muted-foreground mb-8">
-                    <Clock className="w-5 h-5" />
-                    <span>{t("Estimated preparation: 25-35 minutes", "Tahmini hazırlık: 25-35 dakika")}</span>
+                  <div className="bg-primary/10 p-4 rounded-xl mb-6">
+                    <p className="text-primary font-medium">
+                      {t(
+                        "Your order will be served to your table. Please wait.",
+                        "Siparişiniz masanıza servis edilecek. Lütfen bekleyin."
+                      )}
+                    </p>
                   </div>
-                  <div className="flex gap-4 justify-center">
-                    <Button variant="outline" onClick={() => navigate("/")}>
-                      {t("Back to Home", "Ana Sayfaya Dön")}
-                    </Button>
-                    <Button onClick={() => navigate("/order")} className="bg-primary hover:bg-primary/90">
-                      {t("Order More", "Daha Fazla Sipariş")}
-                    </Button>
-                  </div>
+                  <Button onClick={() => navigate("/order")} className="w-full">
+                    {t("Order More", "Daha Fazla Sipariş Ver")}
+                  </Button>
                 </motion.div>
               )}
             </div>
 
-            {/* Order Summary Sidebar */}
-            {step < 4 && (
+            {/* Order Summary */}
+            {step < 3 && (
               <div className="lg:col-span-1">
                 <div className="bg-card p-6 rounded-2xl sticky top-32">
                   <h3 className="font-serif text-xl font-bold mb-4">
                     {t("Order Summary", "Sipariş Özeti")}
                   </h3>
-                  <div className="space-y-4 mb-6">
-                    {items.map((item) => {
-                      const modifiersTotal = item.modifiers.reduce((sum, m) => sum + m.priceAdjustment, 0);
-                      const itemTotal = (item.price + modifiersTotal) * item.quantity;
-                      return (
-                        <div key={item.id} className="flex justify-between text-sm">
-                          <span className="text-muted-foreground">
-                            {item.quantity}x {language === "en" ? item.name : item.nameTr || item.name}
-                          </span>
-                          <span>₺{itemTotal.toFixed(2)}</span>
-                        </div>
-                      );
-                    })}
+                  
+                  {/* Table Info */}
+                  <div className="flex items-center gap-2 mb-4 pb-4 border-b border-border">
+                    <UtensilsCrossed className="w-5 h-5 text-primary" />
+                    <span className="font-medium">{t("Table", "Masa")} {tableNumber}</span>
                   </div>
+
+                  {/* Items */}
+                  <div className="space-y-3 mb-4 max-h-48 overflow-y-auto">
+                    {items.map((item) => (
+                      <div key={item.id} className="flex justify-between text-sm">
+                        <span className="text-muted-foreground">
+                          {item.quantity}x {language === "en" ? item.name : item.nameTr || item.name}
+                        </span>
+                        <span className="font-medium">
+                          ₺{((item.price + item.modifiers.reduce((sum, m) => sum + m.priceAdjustment, 0)) * item.quantity).toFixed(2)}
+                        </span>
+                      </div>
+                    ))}
+                  </div>
+
+                  {/* Totals */}
                   <div className="border-t border-border pt-4 space-y-2">
-                    <div className="flex justify-between text-sm text-muted-foreground">
-                      <span>{t("Subtotal", "Ara Toplam")}</span>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">{t("Subtotal", "Ara Toplam")}</span>
                       <span>₺{getSubtotal().toFixed(2)}</span>
                     </div>
-                    <div className="flex justify-between text-sm text-muted-foreground">
-                      <span>{t("Tax (8%)", "KDV (%8)")}</span>
+                    <div className="flex justify-between text-sm">
+                      <span className="text-muted-foreground">{t("Tax", "KDV")}</span>
                       <span>₺{getTax().toFixed(2)}</span>
                     </div>
                     <div className="flex justify-between text-lg font-bold pt-2 border-t border-border">

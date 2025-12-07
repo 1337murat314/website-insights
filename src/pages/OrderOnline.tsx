@@ -1,8 +1,10 @@
 import { useState, useEffect } from "react";
+import { useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Flame, Leaf, Wheat, Search, Filter } from "lucide-react";
+import { Flame, Leaf, Wheat, Search, UtensilsCrossed } from "lucide-react";
 import Layout from "@/components/layout/Layout";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useCart } from "@/contexts/CartContext";
 import { supabase } from "@/integrations/supabase/client";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
@@ -34,6 +36,8 @@ interface Category {
 
 const OrderOnline = () => {
   const { language, t } = useLanguage();
+  const { tableNumber, setTableNumber } = useCart();
+  const [searchParams] = useSearchParams();
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
@@ -42,6 +46,14 @@ const OrderOnline = () => {
   const [dietaryFilter, setDietaryFilter] = useState<string | null>(null);
   const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+
+  // Get table number from URL params
+  useEffect(() => {
+    const table = searchParams.get("table");
+    if (table) {
+      setTableNumber(table);
+    }
+  }, [searchParams, setTableNumber]);
 
   useEffect(() => {
     fetchData();
@@ -92,7 +104,7 @@ const OrderOnline = () => {
 
   return (
     <Layout>
-      {/* Hero */}
+      {/* Hero with Table Badge */}
       <section className="relative py-32 bg-charcoal">
         <div className="absolute inset-0 opacity-30">
           <img
@@ -102,12 +114,25 @@ const OrderOnline = () => {
           />
         </div>
         <div className="container mx-auto container-padding relative text-center text-cream">
+          {/* Table Number Badge */}
+          {tableNumber && (
+            <motion.div
+              initial={{ opacity: 0, scale: 0.9 }}
+              animate={{ opacity: 1, scale: 1 }}
+              className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-6 py-3 rounded-full mb-6"
+            >
+              <UtensilsCrossed className="w-5 h-5" />
+              <span className="font-bold text-lg">
+                {t("Table", "Masa")} {tableNumber}
+              </span>
+            </motion.div>
+          )}
           <motion.p
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
             className="text-primary font-medium tracking-widest uppercase text-sm mb-4"
           >
-            {t("Fresh & Delicious", "Taze & Lezzetli")}
+            {t("Scan & Order", "Tara & Sipariş Ver")}
           </motion.p>
           <motion.h1
             initial={{ opacity: 0, y: 20 }}
@@ -115,7 +140,7 @@ const OrderOnline = () => {
             transition={{ delay: 0.1 }}
             className="font-serif text-5xl md:text-6xl lg:text-7xl font-bold"
           >
-            {t("Order Online", "Online Sipariş")}
+            {t("Order at Your Table", "Masanızdan Sipariş Verin")}
           </motion.h1>
           <motion.p
             initial={{ opacity: 0, y: 20 }}
@@ -123,13 +148,33 @@ const OrderOnline = () => {
             transition={{ delay: 0.2 }}
             className="mt-4 text-lg text-cream/80 max-w-2xl mx-auto"
           >
-            {t(
-              "Browse our menu, add items to your cart, and place your order for dine-in, pickup, or delivery.",
-              "Menümüze göz atın, sepetinize ekleyin ve sipariş verin."
-            )}
+            {tableNumber 
+              ? t(
+                  "Browse our menu, add items to your cart, and your order will be served directly to your table.",
+                  "Menümüze göz atın, sepetinize ekleyin, siparişiniz masanıza servis edilecek."
+                )
+              : t(
+                  "Scan the QR code on your table to start ordering.",
+                  "Sipariş vermek için masanızdaki QR kodu tarayın."
+                )
+            }
           </motion.p>
         </div>
       </section>
+
+      {/* No Table Warning */}
+      {!tableNumber && (
+        <section className="py-6 bg-amber-500/10 border-b border-amber-500/30">
+          <div className="container mx-auto container-padding text-center">
+            <p className="text-amber-600 dark:text-amber-400 font-medium">
+              {t(
+                "⚠️ Please scan the QR code on your table to place an order. You can still browse the menu below.",
+                "⚠️ Sipariş vermek için lütfen masanızdaki QR kodu tarayın. Menüyü aşağıdan inceleyebilirsiniz."
+              )}
+            </p>
+          </div>
+        </section>
+      )}
 
       {/* Search & Filters */}
       <section className="py-6 bg-secondary sticky top-20 z-40 border-b border-border">

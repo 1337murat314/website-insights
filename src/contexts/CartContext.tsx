@@ -20,6 +20,8 @@ export interface CartItem {
 
 interface CartContextType {
   items: CartItem[];
+  tableNumber: string | null;
+  setTableNumber: (table: string | null) => void;
   addItem: (item: Omit<CartItem, "id">) => void;
   removeItem: (id: string) => void;
   updateQuantity: (id: string, quantity: number) => void;
@@ -40,9 +42,25 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     return saved ? JSON.parse(saved) : [];
   });
 
+  const [tableNumber, setTableNumberState] = useState<string | null>(() => {
+    return localStorage.getItem("tableNumber");
+  });
+
   useEffect(() => {
     localStorage.setItem("cart", JSON.stringify(items));
   }, [items]);
+
+  useEffect(() => {
+    if (tableNumber) {
+      localStorage.setItem("tableNumber", tableNumber);
+    } else {
+      localStorage.removeItem("tableNumber");
+    }
+  }, [tableNumber]);
+
+  const setTableNumber = (table: string | null) => {
+    setTableNumberState(table);
+  };
 
   const addItem = (item: Omit<CartItem, "id">) => {
     const id = `${item.menuItemId}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
@@ -65,6 +83,8 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
 
   const clearCart = () => {
     setItems([]);
+    setTableNumberState(null);
+    localStorage.removeItem("tableNumber");
   };
 
   const getTotalItems = () => {
@@ -90,6 +110,8 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     <CartContext.Provider
       value={{
         items,
+        tableNumber,
+        setTableNumber,
         addItem,
         removeItem,
         updateQuantity,
