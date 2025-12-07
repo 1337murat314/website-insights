@@ -84,7 +84,7 @@ const Reservations = () => {
 
     const { error } = await supabase.from("reservations").insert({
       guest_name: formData.name,
-      guest_email: `${formData.phone}@noemail.com`,
+      guest_email: "-",
       guest_phone: formData.phone || null,
       party_size: partySize,
       reservation_date: formData.date,
