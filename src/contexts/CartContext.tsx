@@ -34,7 +34,7 @@ interface CartContextType {
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
-const TAX_RATE = 0.08; // 8% tax
+// No tax
 
 export const CartProvider = ({ children }: { children: ReactNode }) => {
   const [items, setItems] = useState<CartItem[]>(() => {
@@ -99,11 +99,11 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   };
 
   const getTax = () => {
-    return getSubtotal() * TAX_RATE;
+    return 0;
   };
 
   const getTotal = () => {
-    return getSubtotal() + getTax();
+    return getSubtotal();
   };
 
   return (
