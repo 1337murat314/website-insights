@@ -33,11 +33,8 @@ const AdminLayout = () => {
   const navigate = useNavigate();
   const location = useLocation();
 
-  console.log("AdminLayout render:", { user: user?.email, isLoading, pathname: location.pathname });
-
   useEffect(() => {
     if (!isLoading && !user) {
-      console.log("AdminLayout: No user, redirecting to auth");
       navigate("/admin/auth");
     }
   }, [user, isLoading, navigate]);
