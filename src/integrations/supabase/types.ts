@@ -798,6 +798,10 @@ export type Database = {
       }
       is_admin_or_manager: { Args: { _user_id: string }; Returns: boolean }
       is_waiter_or_above: { Args: { _user_id: string }; Returns: boolean }
+      verify_staff_login: {
+        Args: { staff_code: string; staff_name: string; staff_role: string }
+        Returns: string
+      }
     }
     Enums: {
       app_role: "admin" | "manager" | "staff" | "waiter"

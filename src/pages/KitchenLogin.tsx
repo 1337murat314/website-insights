@@ -25,14 +25,12 @@ const KitchenLogin = () => {
 
     setIsLoading(true);
     try {
-      const { data, error } = await supabase
-        .from("staff_logins")
-        .select("*")
-        .eq("name", name.trim())
-        .eq("code", code)
-        .eq("role", "kitchen")
-        .eq("is_active", true)
-        .maybeSingle();
+      // Use secure function that doesn't expose staff data
+      const { data, error } = await supabase.rpc('verify_staff_login', {
+        staff_name: name.trim(),
+        staff_code: code,
+        staff_role: 'kitchen'
+      });
 
       if (error) throw error;
 
@@ -41,11 +39,11 @@ const KitchenLogin = () => {
         return;
       }
 
-      // Store staff session
-      sessionStorage.setItem("staffSession", JSON.stringify({
-        id: data.id,
-        name: data.name,
-        role: data.role,
+      // Store staff session in localStorage for persistence
+      localStorage.setItem("staffSession", JSON.stringify({
+        id: data,
+        name: name.trim(),
+        role: 'kitchen',
         loginTime: new Date().toISOString()
       }));
 

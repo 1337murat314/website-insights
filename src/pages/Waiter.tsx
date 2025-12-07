@@ -119,7 +119,7 @@ const Waiter = () => {
   const navigate = useNavigate();
 
   useEffect(() => {
-    const session = sessionStorage.getItem("staffSession");
+    const session = localStorage.getItem("staffSession");
     if (!session) {
       navigate("/waiter-login");
       return;
@@ -135,7 +135,7 @@ const Waiter = () => {
   }, [navigate]);
 
   const handleLogout = () => {
-    sessionStorage.removeItem("staffSession");
+    localStorage.removeItem("staffSession");
     navigate("/waiter-login");
   };
 
