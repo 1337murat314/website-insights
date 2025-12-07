@@ -18,7 +18,7 @@ const Kitchen = () => {
   const { t } = useLanguage();
 
   useEffect(() => {
-    const session = sessionStorage.getItem("staffSession");
+    const session = localStorage.getItem("staffSession");
     if (!session) {
       navigate("/kitchen-login");
       return;
@@ -34,7 +34,7 @@ const Kitchen = () => {
   }, [navigate]);
 
   const handleLogout = () => {
-    sessionStorage.removeItem("staffSession");
+    localStorage.removeItem("staffSession");
     navigate("/kitchen-login");
   };
 
