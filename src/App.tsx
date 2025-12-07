@@ -6,12 +6,15 @@ import { BrowserRouter, Routes, Route, useLocation } from "react-router-dom";
 import { AnimatePresence } from "framer-motion";
 import { LanguageProvider } from "@/contexts/LanguageContext";
 import { AuthProvider } from "@/contexts/AuthContext";
+import { CartProvider } from "@/contexts/CartContext";
 import Index from "./pages/Index";
 import Menu from "./pages/Menu";
 import Gallery from "./pages/Gallery";
 import Locations from "./pages/Locations";
 import About from "./pages/About";
 import Reservations from "./pages/Reservations";
+import OrderOnline from "./pages/OrderOnline";
+import Checkout from "./pages/Checkout";
 import NotFound from "./pages/NotFound";
 
 // Admin imports
@@ -28,6 +31,7 @@ import AdminGuests from "./pages/admin/AdminGuests";
 import AdminPromoCodes from "./pages/admin/AdminPromoCodes";
 import AdminEvents from "./pages/admin/AdminEvents";
 import AdminAuditLogs from "./pages/admin/AdminAuditLogs";
+import AdminOrders from "./pages/admin/AdminOrders";
 
 const queryClient = new QueryClient();
 
@@ -40,6 +44,8 @@ const AnimatedRoutes = () => {
         {/* Public routes */}
         <Route path="/" element={<Index />} />
         <Route path="/menu" element={<Menu />} />
+        <Route path="/order" element={<OrderOnline />} />
+        <Route path="/order/checkout" element={<Checkout />} />
         <Route path="/gallery" element={<Gallery />} />
         <Route path="/locations" element={<Locations />} />
         <Route path="/about" element={<About />} />
@@ -49,6 +55,7 @@ const AnimatedRoutes = () => {
         <Route path="/admin/auth" element={<AdminAuth />} />
         <Route path="/admin" element={<AdminLayout />}>
           <Route index element={<AdminDashboard />} />
+          <Route path="orders" element={<AdminOrders />} />
           <Route path="reservations" element={<AdminReservations />} />
           <Route path="guests" element={<AdminGuests />} />
           <Route path="menu" element={<AdminMenu />} />
@@ -71,13 +78,15 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <AuthProvider>
       <LanguageProvider>
-        <TooltipProvider>
-          <Toaster />
-          <Sonner />
-          <BrowserRouter>
-            <AnimatedRoutes />
-          </BrowserRouter>
-        </TooltipProvider>
+        <CartProvider>
+          <TooltipProvider>
+            <Toaster />
+            <Sonner />
+            <BrowserRouter>
+              <AnimatedRoutes />
+            </BrowserRouter>
+          </TooltipProvider>
+        </CartProvider>
       </LanguageProvider>
     </AuthProvider>
   </QueryClientProvider>
