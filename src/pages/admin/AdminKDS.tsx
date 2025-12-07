@@ -39,11 +39,10 @@ interface Order {
   notes: string | null;
 }
 
-const statusFlow = ["new", "accepted", "preparing", "ready"];
+const statusFlow = ["new", "preparing", "ready"];
 
 const statusConfig: Record<string, { label: string; labelTr: string; color: string; bgColor: string }> = {
   new: { label: "NEW", labelTr: "YENİ", color: "text-blue-500", bgColor: "bg-blue-500/20 border-blue-500" },
-  accepted: { label: "ACCEPTED", labelTr: "KABUL", color: "text-indigo-500", bgColor: "bg-indigo-500/20 border-indigo-500" },
   preparing: { label: "COOKING", labelTr: "PİŞİRİLİYOR", color: "text-amber-500", bgColor: "bg-amber-500/20 border-amber-500" },
   ready: { label: "READY", labelTr: "HAZIR", color: "text-green-500", bgColor: "bg-green-500/20 border-green-500" },
 };
@@ -127,7 +126,7 @@ const AdminKDS = () => {
       const { data, error } = await supabase
         .from("orders")
         .select("*")
-        .in("status", ["new", "accepted", "preparing", "ready"])
+        .in("status", ["new", "preparing", "ready"])
         .order("created_at", { ascending: true });
 
       if (error) throw error;
@@ -253,7 +252,7 @@ const AdminKDS = () => {
       </div>
 
       {/* Orders Grid - Kanban Style */}
-      <div className="grid grid-cols-4 gap-4 p-4 h-[calc(100vh-80px)] overflow-hidden">
+      <div className="grid grid-cols-3 gap-4 p-4 h-[calc(100vh-80px)] overflow-hidden">
         {statusFlow.map((status) => {
           const config = statusConfig[status];
           const statusOrders = ordersByStatus[status];
@@ -345,14 +344,8 @@ const AdminKDS = () => {
                             <Button
                               onClick={() => updateOrderStatus(order.id, nextStatus)}
                               className="w-full h-14 text-lg font-bold"
-                              variant={nextStatus === "served" ? "secondary" : "default"}
+                              variant="default"
                             >
-                              {nextStatus === "accepted" && (
-                                <>
-                                  <CheckCircle2 className="w-6 h-6 mr-2" />
-                                  {t("ACCEPT", "KABUL ET")}
-                                </>
-                              )}
                               {nextStatus === "preparing" && (
                                 <>
                                   <ChefHat className="w-6 h-6 mr-2" />
@@ -368,7 +361,7 @@ const AdminKDS = () => {
                               {nextStatus === "served" && (
                                 <>
                                   <CheckCircle2 className="w-6 h-6 mr-2" />
-                                  {t("SERVED", "SERVİS EDİLDİ")}
+                                  {t("PICKED UP", "ALINDI")}
                                 </>
                               )}
                             </Button>
