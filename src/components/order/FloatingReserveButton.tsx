@@ -1,15 +1,19 @@
 import { motion } from "framer-motion";
 import { Calendar } from "lucide-react";
-import { Link } from "react-router-dom";
+import { Link, useLocation } from "react-router-dom";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useCart } from "@/contexts/CartContext";
 
 const FloatingReserveButton = () => {
   const { t } = useLanguage();
   const { tableNumber } = useCart();
+  const location = useLocation();
 
-  // Hide the reserve button when ordering from a table (QR code scan)
-  if (tableNumber) {
+  // Hide the reserve button on ordering-related pages
+  const orderingPaths = ['/order', '/order-tracking', '/checkout'];
+  const isOrderingPage = orderingPaths.some(path => location.pathname.startsWith(path));
+  
+  if (tableNumber || isOrderingPage) {
     return null;
   }
 
