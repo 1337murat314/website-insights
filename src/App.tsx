@@ -37,6 +37,11 @@ import AdminOrders from "./pages/admin/AdminOrders";
 import AdminQRCodes from "./pages/admin/AdminQRCodes";
 import AdminKDS from "./pages/admin/AdminKDS";
 import AdminWaiter from "./pages/admin/AdminWaiter";
+import AdminStaffLogins from "./pages/admin/AdminStaffLogins";
+import KitchenLogin from "./pages/KitchenLogin";
+import WaiterLogin from "./pages/WaiterLogin";
+import Kitchen from "./pages/Kitchen";
+import Waiter from "./pages/Waiter";
 
 const queryClient = new QueryClient();
 
@@ -63,6 +68,12 @@ const AnimatedRoutes = () => {
         <Route path="/contact" element={<Contact />} />
         <Route path="/reservations" element={<Reservations />} />
         
+        {/* Staff routes */}
+        <Route path="/kitchen-login" element={<KitchenLogin />} />
+        <Route path="/waiter-login" element={<WaiterLogin />} />
+        <Route path="/kitchen" element={<Kitchen />} />
+        <Route path="/waiter" element={<Waiter />} />
+        
         {/* Admin routes */}
         <Route path="/admin/auth" element={<AdminAuth />} />
         <Route path="/admin" element={<AdminLayout />}>
@@ -77,6 +88,7 @@ const AnimatedRoutes = () => {
           <Route path="qr-codes" element={<AdminQRCodes />} />
           <Route path="promo-codes" element={<AdminPromoCodes />} />
           <Route path="staff" element={<AdminStaff />} />
+          <Route path="staff-logins" element={<AdminStaffLogins />} />
           <Route path="analytics" element={<AdminAnalytics />} />
           <Route path="audit-logs" element={<AdminAuditLogs />} />
           <Route path="settings" element={<AdminSettings />} />
