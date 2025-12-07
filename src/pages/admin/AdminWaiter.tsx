@@ -147,8 +147,6 @@ const AdminWaiter = () => {
   const fetchServiceRequests = useCallback(async () => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
-
-    console.log("Fetching service requests...");
     const { data, error } = await supabase
       .from("service_requests")
       .select("*")
@@ -161,7 +159,6 @@ const AdminWaiter = () => {
       return;
     }
 
-    console.log("Service requests fetched:", data);
     setServiceRequests(data || []);
   }, []);
 

@@ -163,7 +163,6 @@ const AdminKDS = () => {
   };
 
   const updateOrderStatus = async (orderId: string, newStatus: string) => {
-    console.log("Updating order", orderId, "to status:", newStatus);
     try {
       const { error } = await supabase
         .from("orders")
@@ -189,7 +188,8 @@ const AdminKDS = () => {
     if (currentIndex < statusFlow.length - 1) {
       return statusFlow[currentIndex + 1];
     }
-    return "completed";
+    // When order is "ready", KDS marks it as "served" (delivered to table)
+    return "served";
   };
 
   const getTimeSinceOrder = (createdAt: string) => {
@@ -345,7 +345,7 @@ const AdminKDS = () => {
                             <Button
                               onClick={() => updateOrderStatus(order.id, nextStatus)}
                               className="w-full h-14 text-lg font-bold"
-                              variant={nextStatus === "completed" ? "secondary" : "default"}
+                              variant={nextStatus === "served" ? "secondary" : "default"}
                             >
                               {nextStatus === "accepted" && (
                                 <>
@@ -365,7 +365,7 @@ const AdminKDS = () => {
                                   {t("READY", "HAZIR")}
                                 </>
                               )}
-                              {nextStatus === "completed" && (
+                              {nextStatus === "served" && (
                                 <>
                                   <CheckCircle2 className="w-6 h-6 mr-2" />
                                   {t("SERVED", "SERVİS EDİLDİ")}
