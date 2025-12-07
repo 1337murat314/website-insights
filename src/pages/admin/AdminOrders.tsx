@@ -71,6 +71,7 @@ import { Textarea } from "@/components/ui/textarea";
 import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { playNotificationSound } from "@/lib/notificationSound";
+import { logOrderStatusChanged, logOrderDeleted } from "@/lib/auditLogger";
 
 interface OrderItem {
   id: string;
@@ -184,6 +185,8 @@ const AdminOrders = () => {
         ? `${notePrefix}\n---\n${existingNotes}` 
         : notePrefix;
 
+      const oldStatus = actionOrder.status;
+
       const { error } = await supabase
         .from("orders")
         .update({ 
@@ -193,6 +196,15 @@ const AdminOrders = () => {
         .eq("id", actionOrder.id);
 
       if (error) throw error;
+
+      // Log status change to audit
+      await logOrderStatusChanged(
+        actionOrder.id, 
+        oldStatus, 
+        actionType, 
+        actionOrder.order_number, 
+        actionOrder.table_number
+      );
       
       toast.success(t("Order updated successfully", "Sipariş başarıyla güncellendi"));
       setShowActionDialog(false);
@@ -316,6 +328,9 @@ const AdminOrders = () => {
   };
 
   const updateOrderStatus = async (orderId: string, newStatus: string) => {
+    const order = orders.find(o => o.id === orderId);
+    const oldStatus = order?.status || '';
+    
     try {
       const { error } = await supabase
         .from("orders")
@@ -323,6 +338,10 @@ const AdminOrders = () => {
         .eq("id", orderId);
 
       if (error) throw error;
+
+      // Log status change to audit
+      await logOrderStatusChanged(orderId, oldStatus, newStatus, order?.order_number, order?.table_number);
+
       toast.success(t("Order status updated", "Sipariş durumu güncellendi"));
     } catch (error) {
       console.error("Error updating order:", error);
@@ -339,7 +358,7 @@ const AdminOrders = () => {
       // First get order IDs for this date
       const { data: ordersToDelete, error: fetchError } = await supabase
         .from("orders")
-        .select("id")
+        .select("id, order_number, table_number")
         .gte("created_at", start)
         .lte("created_at", end);
       
@@ -363,6 +382,11 @@ const AdminOrders = () => {
           .in("id", orderIds);
         
         if (ordersError) throw ordersError;
+
+        // Log each deletion to audit
+        for (const order of ordersToDelete) {
+          await logOrderDeleted(order.id, order.order_number, order.table_number);
+        }
         
         // Update local state
         setOrders(prev => prev.filter(o => !orderIds.includes(o.id)));
