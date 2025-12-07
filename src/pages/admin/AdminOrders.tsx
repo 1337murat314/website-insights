@@ -23,6 +23,11 @@ import {
   Trash2,
   History,
   AlertTriangle,
+  RotateCcw,
+  Edit3,
+  Ban,
+  AlertCircle,
+  MoreVertical,
 } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -54,7 +59,16 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog";
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuSeparator,
+  DropdownMenuTrigger,
+} from "@/components/ui/dropdown-menu";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { Textarea } from "@/components/ui/textarea";
+import { Label } from "@/components/ui/label";
 import { toast } from "sonner";
 import { playNotificationSound } from "@/lib/notificationSound";
 
@@ -98,6 +112,11 @@ const statusConfig: Record<string, { label: string; labelTr: string; color: stri
   ready: { label: "Ready", labelTr: "Hazır", color: "bg-green-500", icon: Package },
   completed: { label: "Completed", labelTr: "Tamamlandı", color: "bg-gray-500", icon: CheckCircle2 },
   cancelled: { label: "Cancelled", labelTr: "İptal Edildi", color: "bg-red-500", icon: XCircle },
+  customer_cancelled: { label: "Customer Cancelled", labelTr: "Müşteri İptali", color: "bg-red-400", icon: Ban },
+  kitchen_cancelled: { label: "Kitchen Cancelled", labelTr: "Mutfak İptali", color: "bg-orange-500", icon: AlertCircle },
+  out_of_stock: { label: "Out of Stock", labelTr: "Stokta Yok", color: "bg-yellow-600", icon: AlertTriangle },
+  refunded: { label: "Refunded", labelTr: "İade Edildi", color: "bg-purple-500", icon: RotateCcw },
+  modified: { label: "Modified", labelTr: "Değiştirildi", color: "bg-cyan-500", icon: Edit3 },
 };
 
 const orderTypeIcons: Record<string, React.ElementType> = {
@@ -129,6 +148,69 @@ const AdminOrders = () => {
     const saved = localStorage.getItem("orderSoundEnabled");
     return saved !== "false";
   });
+  
+  // Order action dialog state
+  const [showActionDialog, setShowActionDialog] = useState(false);
+  const [actionOrder, setActionOrder] = useState<Order | null>(null);
+  const [actionType, setActionType] = useState<string>("");
+  const [actionNote, setActionNote] = useState("");
+  const [processingAction, setProcessingAction] = useState(false);
+
+  const openActionDialog = (order: Order, action: string) => {
+    setActionOrder(order);
+    setActionType(action);
+    setActionNote("");
+    setShowActionDialog(true);
+  };
+
+  const handleOrderAction = async () => {
+    if (!actionOrder || !actionType) return;
+    
+    setProcessingAction(true);
+    try {
+      const notePrefix = actionNote 
+        ? `[${statusConfig[actionType]?.label || actionType}] ${actionNote}` 
+        : `[${statusConfig[actionType]?.label || actionType}]`;
+      
+      const existingNotes = actionOrder.notes || "";
+      const newNotes = existingNotes 
+        ? `${notePrefix}\n---\n${existingNotes}` 
+        : notePrefix;
+
+      const { error } = await supabase
+        .from("orders")
+        .update({ 
+          status: actionType,
+          notes: newNotes
+        })
+        .eq("id", actionOrder.id);
+
+      if (error) throw error;
+      
+      toast.success(t("Order updated successfully", "Sipariş başarıyla güncellendi"));
+      setShowActionDialog(false);
+      setActionOrder(null);
+      setActionType("");
+      setActionNote("");
+      
+      // Update local state
+      setOrders(prev => prev.map(o => 
+        o.id === actionOrder.id 
+          ? { ...o, status: actionType, notes: newNotes }
+          : o
+      ));
+      
+      // Also update selected order if it's open
+      if (selectedOrder?.id === actionOrder.id) {
+        setSelectedOrder({ ...selectedOrder, status: actionType, notes: newNotes });
+      }
+    } catch (error) {
+      console.error("Error updating order:", error);
+      toast.error(t("Failed to update order", "Sipariş güncellenemedi"));
+    } finally {
+      setProcessingAction(false);
+    }
+  };
 
   const toggleSound = () => {
     const newValue = !soundEnabled;
@@ -595,15 +677,45 @@ const AdminOrders = () => {
                               : statusConfig[nextStatus].labelTr}
                           </Button>
                         )}
-                        {order.status === "new" && (
-                          <Button
-                            variant="destructive"
-                            size="sm"
-                            onClick={() => updateOrderStatus(order.id, "cancelled")}
-                          >
-                            <XCircle className="w-4 h-4" />
-                          </Button>
-                        )}
+                        {/* More Actions Dropdown */}
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="outline" size="sm">
+                              <MoreVertical className="w-4 h-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end" className="w-48">
+                            <DropdownMenuItem onClick={() => openActionDialog(order, "customer_cancelled")}>
+                              <Ban className="w-4 h-4 mr-2 text-red-400" />
+                              {t("Customer Cancelled", "Müşteri İptali")}
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => openActionDialog(order, "kitchen_cancelled")}>
+                              <AlertCircle className="w-4 h-4 mr-2 text-orange-500" />
+                              {t("Kitchen Cancelled", "Mutfak İptali")}
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => openActionDialog(order, "out_of_stock")}>
+                              <AlertTriangle className="w-4 h-4 mr-2 text-yellow-600" />
+                              {t("Out of Stock", "Stokta Yok")}
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem onClick={() => openActionDialog(order, "modified")}>
+                              <Edit3 className="w-4 h-4 mr-2 text-cyan-500" />
+                              {t("Order Modified", "Sipariş Değiştirildi")}
+                            </DropdownMenuItem>
+                            <DropdownMenuItem onClick={() => openActionDialog(order, "refunded")}>
+                              <RotateCcw className="w-4 h-4 mr-2 text-purple-500" />
+                              {t("Refund / Return", "İade")}
+                            </DropdownMenuItem>
+                            <DropdownMenuSeparator />
+                            <DropdownMenuItem 
+                              onClick={() => openActionDialog(order, "cancelled")}
+                              className="text-destructive focus:text-destructive"
+                            >
+                              <XCircle className="w-4 h-4 mr-2" />
+                              {t("Cancel Order", "Siparişi İptal Et")}
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
                       </div>
                     </motion.div>
                   );
@@ -868,23 +980,165 @@ const AdminOrders = () => {
                   </div>
                 </div>
 
-                {/* Status Actions */}
-                <div className="flex gap-2 pt-4">
-                  {Object.entries(statusConfig).map(([key, config]) => (
-                    <Button
-                      key={key}
-                      variant={selectedOrder.status === key ? "default" : "outline"}
-                      size="sm"
-                      onClick={() => updateOrderStatus(selectedOrder.id, key)}
-                      className={selectedOrder.status === key ? config.color : ""}
-                    >
-                      {language === "en" ? config.label : config.labelTr}
-                    </Button>
-                  ))}
+                {/* Status Actions - Progress Flow */}
+                <div className="pt-4 space-y-4">
+                  <div>
+                    <p className="text-sm font-medium mb-2">{t("Order Progress", "Sipariş İlerlemesi")}</p>
+                    <div className="flex flex-wrap gap-2">
+                      {["new", "accepted", "in_progress", "ready", "completed"].map((key) => {
+                        const config = statusConfig[key];
+                        const StatusIcon = config.icon;
+                        return (
+                          <Button
+                            key={key}
+                            variant={selectedOrder.status === key ? "default" : "outline"}
+                            size="sm"
+                            onClick={() => updateOrderStatus(selectedOrder.id, key)}
+                            className={selectedOrder.status === key ? config.color : ""}
+                          >
+                            <StatusIcon className="w-4 h-4 mr-1" />
+                            {language === "en" ? config.label : config.labelTr}
+                          </Button>
+                        );
+                      })}
+                    </div>
+                  </div>
+                  
+                  {/* Cancel/Issue Actions */}
+                  <div>
+                    <p className="text-sm font-medium mb-2">{t("Cancel / Issues", "İptal / Sorunlar")}</p>
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => openActionDialog(selectedOrder, "customer_cancelled")}
+                        className="border-red-400/50 text-red-400 hover:bg-red-400/10"
+                      >
+                        <Ban className="w-4 h-4 mr-1" />
+                        {t("Customer Cancelled", "Müşteri İptali")}
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => openActionDialog(selectedOrder, "kitchen_cancelled")}
+                        className="border-orange-500/50 text-orange-500 hover:bg-orange-500/10"
+                      >
+                        <AlertCircle className="w-4 h-4 mr-1" />
+                        {t("Kitchen Cancelled", "Mutfak İptali")}
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => openActionDialog(selectedOrder, "out_of_stock")}
+                        className="border-yellow-600/50 text-yellow-600 hover:bg-yellow-600/10"
+                      >
+                        <AlertTriangle className="w-4 h-4 mr-1" />
+                        {t("Out of Stock", "Stokta Yok")}
+                      </Button>
+                    </div>
+                  </div>
+                  
+                  {/* Modify/Refund Actions */}
+                  <div>
+                    <p className="text-sm font-medium mb-2">{t("Modify / Refund", "Değiştir / İade")}</p>
+                    <div className="flex flex-wrap gap-2">
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => openActionDialog(selectedOrder, "modified")}
+                        className="border-cyan-500/50 text-cyan-500 hover:bg-cyan-500/10"
+                      >
+                        <Edit3 className="w-4 h-4 mr-1" />
+                        {t("Order Modified", "Sipariş Değiştirildi")}
+                      </Button>
+                      <Button
+                        variant="outline"
+                        size="sm"
+                        onClick={() => openActionDialog(selectedOrder, "refunded")}
+                        className="border-purple-500/50 text-purple-500 hover:bg-purple-500/10"
+                      >
+                        <RotateCcw className="w-4 h-4 mr-1" />
+                        {t("Refund / Return", "İade")}
+                      </Button>
+                    </div>
+                  </div>
                 </div>
               </div>
             </>
           )}
+        </DialogContent>
+      </Dialog>
+
+      {/* Order Action Dialog */}
+      <Dialog open={showActionDialog} onOpenChange={setShowActionDialog}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              {actionType && statusConfig[actionType] && (
+                <>
+                  {(() => {
+                    const ActionIcon = statusConfig[actionType].icon;
+                    return <ActionIcon className={`w-5 h-5 ${statusConfig[actionType].color.replace("bg-", "text-")}`} />;
+                  })()}
+                  {language === "en" ? statusConfig[actionType].label : statusConfig[actionType].labelTr}
+                </>
+              )}
+            </DialogTitle>
+            <DialogDescription>
+              {actionOrder && (
+                <>
+                  {t("Order", "Sipariş")} #{actionOrder.order_number} - {t("Table", "Masa")} {actionOrder.table_number || "N/A"}
+                </>
+              )}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <div className="space-y-4 py-4">
+            <div className="space-y-2">
+              <Label>{t("Reason / Notes (Optional)", "Sebep / Notlar (İsteğe Bağlı)")}</Label>
+              <Textarea
+                value={actionNote}
+                onChange={(e) => setActionNote(e.target.value)}
+                placeholder={t("Add notes about this action...", "Bu işlem hakkında not ekleyin...")}
+                rows={3}
+              />
+            </div>
+            
+            {actionType === "refunded" && (
+              <div className="bg-purple-500/10 border border-purple-500/20 p-3 rounded-lg">
+                <p className="text-sm text-purple-400">
+                  {t(
+                    "Note: This will mark the order as refunded. Process the actual refund through your payment system.",
+                    "Not: Bu işlem siparişi iade olarak işaretleyecektir. Gerçek iadeyi ödeme sisteminizden yapın."
+                  )}
+                </p>
+              </div>
+            )}
+            
+            {(actionType === "customer_cancelled" || actionType === "kitchen_cancelled" || actionType === "cancelled") && (
+              <div className="bg-red-500/10 border border-red-500/20 p-3 rounded-lg">
+                <p className="text-sm text-red-400">
+                  {t(
+                    "This will cancel the order. The customer will see the order as cancelled.",
+                    "Bu işlem siparişi iptal edecektir. Müşteri siparişin iptal edildiğini görecektir."
+                  )}
+                </p>
+              </div>
+            )}
+          </div>
+          
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowActionDialog(false)} disabled={processingAction}>
+              {t("Cancel", "İptal")}
+            </Button>
+            <Button 
+              onClick={handleOrderAction} 
+              disabled={processingAction}
+              className={actionType && statusConfig[actionType] ? statusConfig[actionType].color : ""}
+            >
+              {processingAction ? t("Processing...", "İşleniyor...") : t("Confirm", "Onayla")}
+            </Button>
+          </DialogFooter>
         </DialogContent>
       </Dialog>
     </div>
