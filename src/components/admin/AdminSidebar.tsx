@@ -16,6 +16,7 @@ import {
   ScrollText,
   Globe,
   ShoppingBag,
+  QrCode,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -32,6 +33,7 @@ const getNavItems = (t: (en: string, tr: string) => string) => [
   { path: "/admin/guests", label: t("Guest CRM", "Misafir CRM"), icon: Crown },
   { path: "/admin/menu", label: t("Menu", "Menü"), icon: UtensilsCrossed },
   { path: "/admin/tables", label: t("Tables", "Masalar"), icon: TableProperties },
+  { path: "/admin/qr-codes", label: t("QR Codes", "QR Kodları"), icon: QrCode },
   { path: "/admin/promo-codes", label: t("Promo Codes", "Promosyon Kodları"), icon: Gift },
   { path: "/admin/events", label: t("Events", "Etkinlikler"), icon: PartyPopper },
   { path: "/admin/staff", label: t("Staff", "Personel"), icon: Users },
