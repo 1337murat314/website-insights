@@ -35,6 +35,28 @@ const Reservations = () => {
 
   const guestOptions = ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10+"];
 
+  const sendWhatsAppConfirmation = async (phone: string, name: string, date: string, time: string, guests: string, branch: string) => {
+    try {
+      const branchName = BRANCHES.find((b) => b.id === branch)?.name || branch;
+      const message = t(
+        `🍽️ Califorian Restaurant Reservation Confirmation\n\nDear ${name},\n\nYour reservation has been received!\n\n📅 Date: ${date}\n⏰ Time: ${time}\n👥 Guests: ${guests}\n📍 Location: ${branchName}\n\nWe will confirm your reservation shortly.\n\nThank you for choosing Califorian!`,
+        `🍽️ Califorian Restaurant Rezervasyon Onayı\n\nSayın ${name},\n\nRezervasyonunuz alındı!\n\n📅 Tarih: ${date}\n⏰ Saat: ${time}\n👥 Kişi: ${guests}\n📍 Şube: ${branchName}\n\nRezervasyonunuz kısa süre içinde onaylanacaktır.\n\nCaliforian'ı tercih ettiğiniz için teşekkürler!`
+      );
+
+      const { data, error } = await supabase.functions.invoke('send-whatsapp', {
+        body: { phone, message }
+      });
+
+      if (error) {
+        console.error('WhatsApp notification error:', error);
+      } else {
+        console.log('WhatsApp notification sent:', data);
+      }
+    } catch (error) {
+      console.error('Failed to send WhatsApp notification:', error);
+    }
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSubmitting(true);
@@ -52,9 +74,8 @@ const Reservations = () => {
       status: "pending",
     });
 
-    setIsSubmitting(false);
-
     if (error) {
+      setIsSubmitting(false);
       console.error("Reservation error:", error);
       toast({
         title: t("Error", "Hata"),
@@ -64,11 +85,25 @@ const Reservations = () => {
       return;
     }
 
+    // Send WhatsApp confirmation if phone number is provided
+    if (formData.phone) {
+      await sendWhatsAppConfirmation(
+        formData.phone,
+        formData.name,
+        formData.date,
+        formData.time,
+        formData.guests,
+        formData.branch
+      );
+    }
+
+    setIsSubmitting(false);
+
     toast({
       title: t("Reservation Request Sent!", "Rezervasyon Talebi Gönderildi!"),
       description: t(
-        "We'll confirm your reservation shortly via email.",
-        "Rezervasyonunuzu kısa süre içinde e-posta ile onaylayacağız."
+        "We'll confirm your reservation shortly. You'll receive a WhatsApp confirmation.",
+        "Rezervasyonunuzu kısa süre içinde onaylayacağız. WhatsApp'tan onay mesajı alacaksınız."
       ),
     });
     setStep(4);
@@ -344,11 +379,15 @@ const Reservations = () => {
                 </h2>
                 <p className="text-muted-foreground max-w-md mx-auto">
                   {t(
-                    "Your reservation request has been received. We'll send a confirmation email to ",
-                    "Rezervasyon talebiniz alındı. Onay e-postası şu adrese gönderilecek: "
+                    "Your reservation request has been received. You'll receive a WhatsApp confirmation shortly.",
+                    "Rezervasyon talebiniz alındı. Kısa süre içinde WhatsApp'tan onay mesajı alacaksınız."
                   )}
-                  <span className="font-medium text-foreground">{formData.email}</span>
                 </p>
+                {formData.phone && (
+                  <p className="text-sm text-muted-foreground">
+                    📱 {formData.phone}
+                  </p>
+                )}
                 <Button
                   onClick={() => {
                     setStep(1);
