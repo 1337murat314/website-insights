@@ -221,15 +221,24 @@ const OrderTracking = () => {
 
     setSendingRequest(requestType);
     try {
-      const { error } = await supabase
+      const insertData = {
+        table_number: tableNumber,
+        request_type: requestType,
+        order_id: orders[0]?.id || null,
+      };
+      console.log("Sending service request:", insertData);
+      
+      const { data, error } = await supabase
         .from("service_requests")
-        .insert({
-          table_number: tableNumber,
-          request_type: requestType,
-          order_id: orders[0]?.id || null,
-        });
+        .insert(insertData)
+        .select();
 
-      if (error) throw error;
+      if (error) {
+        console.error("Service request error:", error);
+        throw error;
+      }
+      
+      console.log("Service request created:", data);
 
       toast.success(
         requestType === "call_waiter"
@@ -238,9 +247,9 @@ const OrderTracking = () => {
       );
       
       fetchTableOrders();
-    } catch (err) {
+    } catch (err: any) {
       console.error("Error sending request:", err);
-      toast.error(t("Failed to send request", "İstek gönderilemedi"));
+      toast.error(t("Failed to send request", "İstek gönderilemedi") + (err?.message ? `: ${err.message}` : ""));
     } finally {
       setSendingRequest(null);
     }

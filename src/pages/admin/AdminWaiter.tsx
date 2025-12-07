@@ -148,6 +148,7 @@ const AdminWaiter = () => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
+    console.log("Fetching service requests...");
     const { data, error } = await supabase
       .from("service_requests")
       .select("*")
@@ -160,6 +161,7 @@ const AdminWaiter = () => {
       return;
     }
 
+    console.log("Service requests fetched:", data);
     setServiceRequests(data || []);
   }, []);
 
@@ -301,7 +303,7 @@ const AdminWaiter = () => {
     return <Badge className={config.color}>{config.label}</Badge>;
   };
 
-  // Get live tables - tables with ongoing orders (not completed)
+  // Get live tables - tables with ongoing orders OR pending service requests
   const getLiveTables = (): LiveTable[] => {
     const tableMap = new Map<string, Order[]>();
     
@@ -316,13 +318,20 @@ const AdminWaiter = () => {
         tableMap.get(tableNum)!.push(order);
       });
 
+    // Also add tables that have service requests but no orders
+    serviceRequests.forEach(request => {
+      if (!tableMap.has(request.table_number)) {
+        tableMap.set(request.table_number, []);
+      }
+    });
+
     // Convert to LiveTable objects
     const liveTables: LiveTable[] = [];
     tableMap.forEach((tableOrders, tableNumber) => {
       const totalAmount = tableOrders.reduce((sum, o) => sum + o.total, 0);
       const hasReadyOrders = tableOrders.some(o => o.status === "ready");
       const hasServedOrders = tableOrders.some(o => o.status === "served");
-      const allServed = tableOrders.every(o => o.status === "served");
+      const allServed = tableOrders.length > 0 && tableOrders.every(o => o.status === "served");
       const tableRequests = serviceRequests.filter(r => r.table_number === tableNumber);
       
       liveTables.push({
