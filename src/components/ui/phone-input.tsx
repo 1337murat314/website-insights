@@ -96,7 +96,7 @@ export function PhoneInput({
   const handlePhoneChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const inputValue = e.target.value;
     // Only keep numbers and spaces
-    const cleaned = inputValue.replace(/[^\\d\\s]/g, "");
+    const cleaned = inputValue.replace(/[^\d\s]/g, "");
     onChange(`${selectedCountry.dialCode} ${cleaned}`);
   };
 
