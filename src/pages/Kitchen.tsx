@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
 import { useNavigate } from "react-router-dom";
-import { LogOut, User } from "lucide-react";
+import { LogOut, User, Globe } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/contexts/LanguageContext";
 import AdminKDS from "@/pages/admin/AdminKDS";
@@ -15,7 +15,7 @@ interface StaffSession {
 const Kitchen = () => {
   const [staffSession, setStaffSession] = useState<StaffSession | null>(null);
   const navigate = useNavigate();
-  const { t } = useLanguage();
+  const { t, language, setLanguage } = useLanguage();
 
   useEffect(() => {
     const session = localStorage.getItem("staffSession");
@@ -38,6 +38,10 @@ const Kitchen = () => {
     navigate("/kitchen-login");
   };
 
+  const toggleLanguage = () => {
+    setLanguage(language === "en" ? "tr" : "en");
+  };
+
   if (!staffSession) return null;
 
   return (
@@ -48,10 +52,16 @@ const Kitchen = () => {
           <User className="w-4 h-4 text-muted-foreground" />
           <span className="font-medium">{staffSession.name}</span>
         </div>
-        <Button variant="ghost" size="sm" onClick={handleLogout}>
-          <LogOut className="w-4 h-4 mr-2" />
-          {t("Logout", "Çıkış")}
-        </Button>
+        <div className="flex items-center gap-2">
+          <Button variant="ghost" size="sm" onClick={toggleLanguage} className="gap-1">
+            <Globe className="w-4 h-4" />
+            {language === "en" ? "TR" : "EN"}
+          </Button>
+          <Button variant="ghost" size="sm" onClick={handleLogout}>
+            <LogOut className="w-4 h-4 mr-2" />
+            {t("Logout", "Çıkış")}
+          </Button>
+        </div>
       </div>
       
       {/* KDS Content with padding for staff bar */}
