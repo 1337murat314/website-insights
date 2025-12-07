@@ -94,6 +94,7 @@ const OrderTracking = () => {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
   const tableNumber = searchParams.get("table");
+  const verificationCode = searchParams.get("code");
   
   const [orders, setOrders] = useState<Order[]>([]);
   const [orderItems, setOrderItems] = useState<Record<string, OrderItem[]>>({});
@@ -103,8 +104,8 @@ const OrderTracking = () => {
   const [sendingRequest, setSendingRequest] = useState<string | null>(null);
 
   const fetchTableOrders = async () => {
-    if (!tableNumber) {
-      setError("No table number provided");
+    if (!tableNumber || !verificationCode) {
+      setError("Invalid order access");
       setLoading(false);
       return;
     }
@@ -114,11 +115,13 @@ const OrderTracking = () => {
       const today = new Date();
       today.setHours(0, 0, 0, 0);
 
-      // Fetch all active orders for this table today
+      // Fetch orders using verification code for secure access
+      // First get the order that matches the verification code
       const { data: ordersData, error: ordersError } = await supabase
         .from("orders")
         .select("*")
         .eq("table_number", tableNumber)
+        .eq("verification_code", verificationCode.toUpperCase())
         .gte("created_at", today.toISOString())
         .not("status", "in", '("completed","cancelled")')
         .order("created_at", { ascending: false });
@@ -164,10 +167,10 @@ const OrderTracking = () => {
   useEffect(() => {
     fetchTableOrders();
 
-    // Subscribe to realtime updates
-    if (tableNumber) {
+    // Subscribe to realtime updates - only if we have valid verification
+    if (tableNumber && verificationCode) {
       const ordersChannel = supabase
-        .channel(`table-orders-${tableNumber}`)
+        .channel(`table-orders-${tableNumber}-${verificationCode}`)
         .on(
           "postgres_changes",
           { 
@@ -183,7 +186,7 @@ const OrderTracking = () => {
         .subscribe();
 
       const requestsChannel = supabase
-        .channel(`table-requests-${tableNumber}`)
+        .channel(`table-requests-${tableNumber}-${verificationCode}`)
         .on(
           "postgres_changes",
           { 
@@ -203,7 +206,7 @@ const OrderTracking = () => {
         supabase.removeChannel(requestsChannel);
       };
     }
-  }, [tableNumber]);
+  }, [tableNumber, verificationCode]);
 
   const sendServiceRequest = async (requestType: "call_waiter" | "request_bill") => {
     if (!tableNumber) return;
@@ -272,17 +275,17 @@ const OrderTracking = () => {
     );
   }
 
-  if (error || !tableNumber) {
+  if (error || !tableNumber || !verificationCode) {
     return (
       <Layout>
         <section className="min-h-[60vh] flex items-center justify-center">
           <div className="text-center">
             <XCircle className="w-16 h-16 text-destructive mx-auto mb-4" />
             <h2 className="font-serif text-2xl font-bold mb-4">
-              {t("No Table Found", "Masa Bulunamadı")}
+              {t("Invalid Order Access", "Geçersiz Sipariş Erişimi")}
             </h2>
             <p className="text-muted-foreground mb-6">
-              {t("Please scan your table QR code.", "Lütfen masanızdaki QR kodu tarayın.")}
+              {t("Please use the link provided after placing your order.", "Lütfen siparişinizi verdikten sonra verilen bağlantıyı kullanın.")}
             </p>
             <Button onClick={() => navigate("/order")}>
               {t("Back to Menu", "Menüye Dön")}
@@ -492,7 +495,7 @@ const OrderTracking = () => {
           <div className="flex gap-4">
             <Button 
               variant="outline" 
-              onClick={() => navigate("/order")}
+              onClick={() => navigate(`/order?table=${tableNumber}`)}
               className="flex-1"
             >
               <ArrowLeft className="w-4 h-4 mr-2" />

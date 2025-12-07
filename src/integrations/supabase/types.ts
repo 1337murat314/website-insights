@@ -392,6 +392,7 @@ export type Database = {
           tax: number
           total: number
           updated_at: string
+          verification_code: string
         }
         Insert: {
           created_at?: string
@@ -413,6 +414,7 @@ export type Database = {
           tax?: number
           total?: number
           updated_at?: string
+          verification_code: string
         }
         Update: {
           created_at?: string
@@ -434,6 +436,7 @@ export type Database = {
           tax?: number
           total?: number
           updated_at?: string
+          verification_code?: string
         }
         Relationships: []
       }
