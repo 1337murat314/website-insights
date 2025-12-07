@@ -4,10 +4,12 @@ import { Menu, X, ArrowRight } from "lucide-react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Button } from "@/components/ui/button";
 import { useLanguage } from "@/contexts/LanguageContext";
+import { useCart } from "@/contexts/CartContext";
 import { NAV_LINKS } from "@/lib/constants";
 import logoLight from "@/assets/logo-light.png";
 
 const Header = () => {
+  const { tableNumber } = useCart();
   const [isOpen, setIsOpen] = useState(false);
   const [isScrolled, setIsScrolled] = useState(false);
   const { language, setLanguage, t } = useLanguage();
@@ -93,15 +95,17 @@ const Header = () => {
               <span className={language === "tr" ? "text-primary" : ""}>TR</span>
             </motion.button>
 
-            {/* Reserve Button - Desktop */}
-            <Link to="/reservations" className="hidden md:block">
-              <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
-                <Button className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold px-6 py-5 rounded-full group">
-                  {t("Reserve", "Rezervasyon")}
-                  <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
-                </Button>
-              </motion.div>
-            </Link>
+            {/* Reserve Button - Desktop (hidden when ordering from table) */}
+            {!tableNumber && (
+              <Link to="/reservations" className="hidden md:block">
+                <motion.div whileHover={{ scale: 1.02 }} whileTap={{ scale: 0.98 }}>
+                  <Button className="bg-primary hover:bg-primary/90 text-primary-foreground font-semibold px-6 py-5 rounded-full group">
+                    {t("Reserve", "Rezervasyon")}
+                    <ArrowRight className="ml-2 w-4 h-4 group-hover:translate-x-1 transition-transform" />
+                  </Button>
+                </motion.div>
+              </Link>
+            )}
 
             {/* Mobile Menu Toggle */}
             <motion.button
@@ -151,15 +155,17 @@ const Header = () => {
               <div className="pt-4 flex gap-3">
                 <button
                   onClick={toggleLanguage}
-                  className="flex-1 py-3 px-4 rounded-full border border-border text-sm font-medium hover:bg-secondary transition-colors"
+                  className={`${tableNumber ? "flex-1" : ""} py-3 px-4 rounded-full border border-border text-sm font-medium hover:bg-secondary transition-colors`}
                 >
                   {language === "en" ? "Türkçe" : "English"}
                 </button>
-                <Link to="/reservations" onClick={() => setIsOpen(false)} className="flex-1">
-                  <Button className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold py-6 rounded-full">
-                    {t("Reserve", "Rezervasyon")}
-                  </Button>
-                </Link>
+                {!tableNumber && (
+                  <Link to="/reservations" onClick={() => setIsOpen(false)} className="flex-1">
+                    <Button className="w-full bg-primary hover:bg-primary/90 text-primary-foreground font-semibold py-6 rounded-full">
+                      {t("Reserve", "Rezervasyon")}
+                    </Button>
+                  </Link>
+                )}
               </div>
             </div>
           </motion.nav>
