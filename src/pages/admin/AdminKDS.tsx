@@ -39,12 +39,12 @@ interface Order {
   notes: string | null;
 }
 
-const statusFlow = ["new", "accepted", "in_progress", "ready"];
+const statusFlow = ["new", "accepted", "preparing", "ready"];
 
 const statusConfig: Record<string, { label: string; labelTr: string; color: string; bgColor: string }> = {
   new: { label: "NEW", labelTr: "YENİ", color: "text-blue-500", bgColor: "bg-blue-500/20 border-blue-500" },
   accepted: { label: "ACCEPTED", labelTr: "KABUL", color: "text-indigo-500", bgColor: "bg-indigo-500/20 border-indigo-500" },
-  in_progress: { label: "COOKING", labelTr: "PİŞİRİLİYOR", color: "text-amber-500", bgColor: "bg-amber-500/20 border-amber-500" },
+  preparing: { label: "COOKING", labelTr: "PİŞİRİLİYOR", color: "text-amber-500", bgColor: "bg-amber-500/20 border-amber-500" },
   ready: { label: "READY", labelTr: "HAZIR", color: "text-green-500", bgColor: "bg-green-500/20 border-green-500" },
 };
 
@@ -127,7 +127,7 @@ const AdminKDS = () => {
       const { data, error } = await supabase
         .from("orders")
         .select("*")
-        .in("status", ["new", "accepted", "in_progress", "ready"])
+        .in("status", ["new", "accepted", "preparing", "ready"])
         .order("created_at", { ascending: true });
 
       if (error) throw error;
@@ -345,7 +345,7 @@ const AdminKDS = () => {
                                   {t("ACCEPT", "KABUL ET")}
                                 </>
                               )}
-                              {nextStatus === "in_progress" && (
+                              {nextStatus === "preparing" && (
                                 <>
                                   <ChefHat className="w-6 h-6 mr-2" />
                                   {t("START COOKING", "PİŞİRMEYE BAŞLA")}
