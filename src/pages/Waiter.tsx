@@ -194,6 +194,7 @@ const Waiter = () => {
     fetchOrders();
     fetchServiceRequests();
 
+    // Realtime subscriptions
     const ordersChannel = supabase
       .channel("waiter-orders")
       .on(
@@ -222,9 +223,35 @@ const Waiter = () => {
       )
       .subscribe();
 
+    // Refetch when page becomes visible (tab switch, screen on, etc.)
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === "visible") {
+        fetchOrders();
+        fetchServiceRequests();
+      }
+    };
+
+    // Refetch when window regains focus
+    const handleFocus = () => {
+      fetchOrders();
+      fetchServiceRequests();
+    };
+
+    // Periodic polling every 30 seconds as fallback
+    const pollInterval = setInterval(() => {
+      fetchOrders();
+      fetchServiceRequests();
+    }, 30000);
+
+    document.addEventListener("visibilitychange", handleVisibilityChange);
+    window.addEventListener("focus", handleFocus);
+
     return () => {
       supabase.removeChannel(ordersChannel);
       supabase.removeChannel(requestsChannel);
+      document.removeEventListener("visibilitychange", handleVisibilityChange);
+      window.removeEventListener("focus", handleFocus);
+      clearInterval(pollInterval);
     };
   }, [staffSession, fetchOrders, fetchServiceRequests, soundEnabled]);
 
