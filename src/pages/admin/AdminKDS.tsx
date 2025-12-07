@@ -88,16 +88,17 @@ const AdminKDS = () => {
   useEffect(() => {
     fetchOrders();
 
-    const channel = supabase
+    const ordersChannel = supabase
       .channel("kds-orders")
       .on(
         "postgres_changes",
         { event: "*", schema: "public", table: "orders" },
-        (payload) => {
+        async (payload) => {
           if (payload.eventType === "INSERT") {
             const newOrder = payload.new as Order;
+            // Immediately fetch order items before adding to state
+            await fetchOrderItemsForOrder(newOrder.id);
             setOrders((prev) => [newOrder, ...prev]);
-            fetchOrderItemsForOrder(newOrder.id);
             if (soundEnabled) {
               playNotificationSound();
             }
@@ -111,13 +112,38 @@ const AdminKDS = () => {
             );
           } else if (payload.eventType === "DELETE") {
             setOrders((prev) => prev.filter((o) => o.id !== payload.old.id));
+            // Clean up order items from state
+            setOrderItems((prev) => {
+              const newItems = { ...prev };
+              delete newItems[payload.old.id];
+              return newItems;
+            });
+          }
+        }
+      )
+      .subscribe();
+
+    // Also subscribe to order_items changes
+    const itemsChannel = supabase
+      .channel("kds-order-items")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "order_items" },
+        (payload) => {
+          if (payload.eventType === "INSERT" || payload.eventType === "UPDATE") {
+            const orderId = (payload.new as any).order_id;
+            fetchOrderItemsForOrder(orderId);
+          } else if (payload.eventType === "DELETE") {
+            const orderId = (payload.old as any).order_id;
+            fetchOrderItemsForOrder(orderId);
           }
         }
       )
       .subscribe();
 
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(ordersChannel);
+      supabase.removeChannel(itemsChannel);
     };
   }, [soundEnabled]);
 

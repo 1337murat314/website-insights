@@ -10,10 +10,29 @@ interface LanguageContextType {
 
 const LanguageContext = createContext<LanguageContextType | undefined>(undefined);
 
+const detectBrowserLanguage = (): Language => {
+  // Get browser language (e.g., "en-US", "tr-TR", "tr")
+  const browserLang = navigator.language || (navigator as any).userLanguage || "en";
+  const primaryLang = browserLang.split("-")[0].toLowerCase();
+  
+  // Check if Turkish
+  if (primaryLang === "tr") {
+    return "tr";
+  }
+  
+  // Default to English for all other languages
+  return "en";
+};
+
 export const LanguageProvider = ({ children }: { children: ReactNode }) => {
   const [language, setLanguage] = useState<Language>(() => {
+    // First check localStorage for saved preference
     const saved = localStorage.getItem("language");
-    return (saved as Language) || "en";
+    if (saved === "en" || saved === "tr") {
+      return saved;
+    }
+    // If no saved preference, auto-detect from browser
+    return detectBrowserLanguage();
   });
 
   useEffect(() => {
