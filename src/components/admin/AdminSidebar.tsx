@@ -18,6 +18,7 @@ import {
   QrCode,
   MonitorPlay,
   Utensils,
+  KeyRound,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -39,6 +40,7 @@ const getNavItems = (t: (en: string, tr: string) => string) => [
   { path: "/admin/qr-codes", label: t("QR Codes", "QR Kodları"), icon: QrCode },
   { path: "/admin/promo-codes", label: t("Promo Codes", "Promosyon Kodları"), icon: Gift },
   { path: "/admin/staff", label: t("Staff", "Personel"), icon: Users },
+  { path: "/admin/staff-logins", label: t("Staff Logins", "Personel Girişleri"), icon: KeyRound },
   { path: "/admin/analytics", label: t("Analytics", "Analitik"), icon: BarChart3 },
   { path: "/admin/audit-logs", label: t("Audit Logs", "Denetim Kayıtları"), icon: ScrollText },
   { path: "/admin/settings", label: t("Settings", "Ayarlar"), icon: Settings },
