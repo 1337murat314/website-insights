@@ -328,8 +328,8 @@ const Checkout = () => {
                   </h2>
                   <p className="text-muted-foreground mb-6">
                     {t(
-                      "Your order has been received and will be prepared shortly.",
-                      "Siparişiniz alındı ve kısa sürede hazırlanacak."
+                      "Your order has been sent to the kitchen!",
+                      "Siparişiniz mutfağa gönderildi!"
                     )}
                   </p>
                   {orderNumber && (
@@ -343,14 +343,26 @@ const Checkout = () => {
                   <div className="bg-primary/10 p-4 rounded-xl mb-6">
                     <p className="text-primary font-medium">
                       {t(
-                        "Your order will be served to your table. Please wait.",
-                        "Siparişiniz masanıza servis edilecek. Lütfen bekleyin."
+                        "Track your order status in real-time below!",
+                        "Sipariş durumunuzu aşağıdan anlık takip edin!"
                       )}
                     </p>
                   </div>
-                  <Button onClick={() => navigate("/order")} className="w-full">
-                    {t("Order More", "Daha Fazla Sipariş Ver")}
-                  </Button>
+                  <div className="space-y-3">
+                    <Button 
+                      onClick={() => navigate(`/order-tracking?order=${orderNumber}`)} 
+                      className="w-full bg-primary hover:bg-primary/90"
+                    >
+                      {t("Track Order Status", "Sipariş Durumunu Takip Et")}
+                    </Button>
+                    <Button 
+                      variant="outline" 
+                      onClick={() => navigate("/order")} 
+                      className="w-full"
+                    >
+                      {t("Order More", "Daha Fazla Sipariş Ver")}
+                    </Button>
+                  </div>
                 </motion.div>
               )}
             </div>
