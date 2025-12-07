@@ -1,7 +1,10 @@
-import { ReactNode } from "react";
+import { ReactNode, useState } from "react";
 import { motion } from "framer-motion";
 import Header from "./Header";
 import Footer from "./Footer";
+import FloatingReserveButton from "@/components/order/FloatingReserveButton";
+import FloatingCartButton from "@/components/order/FloatingCartButton";
+import CartDrawer from "@/components/order/CartDrawer";
 
 interface LayoutProps {
   children: ReactNode;
@@ -28,6 +31,8 @@ const pageVariants = {
 };
 
 const Layout = ({ children }: LayoutProps) => {
+  const [isCartOpen, setIsCartOpen] = useState(false);
+
   return (
     <div className="min-h-screen flex flex-col bg-background">
       <Header />
@@ -41,6 +46,11 @@ const Layout = ({ children }: LayoutProps) => {
         {children}
       </motion.main>
       <Footer />
+      
+      {/* Floating Buttons */}
+      <FloatingReserveButton />
+      <FloatingCartButton onClick={() => setIsCartOpen(true)} />
+      <CartDrawer isOpen={isCartOpen} onClose={() => setIsCartOpen(false)} />
     </div>
   );
 };

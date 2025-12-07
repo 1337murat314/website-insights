@@ -12,6 +12,7 @@ import Menu from "./pages/Menu";
 import Gallery from "./pages/Gallery";
 import Locations from "./pages/Locations";
 import About from "./pages/About";
+import Contact from "./pages/Contact";
 import Reservations from "./pages/Reservations";
 import OrderOnline from "./pages/OrderOnline";
 import Checkout from "./pages/Checkout";
@@ -49,6 +50,7 @@ const AnimatedRoutes = () => {
         <Route path="/gallery" element={<Gallery />} />
         <Route path="/locations" element={<Locations />} />
         <Route path="/about" element={<About />} />
+        <Route path="/contact" element={<Contact />} />
         <Route path="/reservations" element={<Reservations />} />
         
         {/* Admin routes */}
