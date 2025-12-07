@@ -109,7 +109,9 @@ const statusConfig: Record<string, { label: string; labelTr: string; color: stri
   new: { label: "New", labelTr: "Yeni", color: "bg-blue-500", icon: Bell },
   accepted: { label: "Accepted", labelTr: "Kabul Edildi", color: "bg-indigo-500", icon: CheckCircle2 },
   in_progress: { label: "In Progress", labelTr: "Hazırlanıyor", color: "bg-amber-500", icon: ChefHat },
+  preparing: { label: "Preparing", labelTr: "Hazırlanıyor", color: "bg-amber-500", icon: ChefHat },
   ready: { label: "Ready", labelTr: "Hazır", color: "bg-green-500", icon: Package },
+  served: { label: "Served", labelTr: "Servis Edildi", color: "bg-teal-500", icon: CheckCircle2 },
   completed: { label: "Completed", labelTr: "Tamamlandı", color: "bg-gray-500", icon: CheckCircle2 },
   cancelled: { label: "Cancelled", labelTr: "İptal Edildi", color: "bg-red-500", icon: XCircle },
   customer_cancelled: { label: "Customer Cancelled", labelTr: "Müşteri İptali", color: "bg-red-400", icon: Ban },
@@ -118,6 +120,10 @@ const statusConfig: Record<string, { label: string; labelTr: string; color: stri
   refunded: { label: "Refunded", labelTr: "İade Edildi", color: "bg-purple-500", icon: RotateCcw },
   modified: { label: "Modified", labelTr: "Değiştirildi", color: "bg-cyan-500", icon: Edit3 },
 };
+
+const defaultStatusConfig = { label: "Unknown", labelTr: "Bilinmiyor", color: "bg-gray-400", icon: AlertCircle };
+
+const getStatusConfig = (status: string) => statusConfig[status] || defaultStatusConfig;
 
 const orderTypeIcons: Record<string, React.ElementType> = {
   "dine-in": UtensilsCrossed,
@@ -459,7 +465,6 @@ const AdminOrders = () => {
     return flow[currentStatus] || null;
   };
 
-  console.log("AdminOrders render:", { loading, error, ordersCount: orders.length });
 
   if (loading) {
     return (
@@ -639,7 +644,7 @@ const AdminOrders = () => {
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
               <AnimatePresence mode="popLayout">
                 {filteredOrders.map((order) => {
-                  const status = statusConfig[order.status];
+                  const status = getStatusConfig(order.status);
                   const OrderTypeIcon = orderTypeIcons[order.order_type] || Package;
                   const PaymentIcon = paymentIcons[order.payment_method] || CreditCard;
                   const nextStatus = getNextStatus(order.status);
@@ -843,7 +848,7 @@ const AdminOrders = () => {
           {filteredOrders.length > 0 ? (
             <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
               {filteredOrders.map((order) => {
-                const status = statusConfig[order.status];
+                const status = getStatusConfig(order.status);
                 return (
                   <div
                     key={order.id}
@@ -923,10 +928,10 @@ const AdminOrders = () => {
               <DialogHeader>
                 <DialogTitle className="flex items-center gap-4">
                   <span className="text-2xl font-bold">#{selectedOrder.order_number}</span>
-                  <Badge className={`${statusConfig[selectedOrder.status].color} text-white`}>
+                  <Badge className={`${getStatusConfig(selectedOrder.status).color} text-white`}>
                     {language === "en"
-                      ? statusConfig[selectedOrder.status].label
-                      : statusConfig[selectedOrder.status].labelTr}
+                      ? getStatusConfig(selectedOrder.status).label
+                      : getStatusConfig(selectedOrder.status).labelTr}
                   </Badge>
                 </DialogTitle>
               </DialogHeader>
