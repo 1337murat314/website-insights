@@ -15,13 +15,11 @@ import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { 
-  UtensilsCrossed, 
   Clock, 
   CheckCircle2, 
   Bell, 
   TableProperties,
   ShoppingBag,
-  Users,
   Timer,
   Utensils,
   ChefHat,
@@ -33,7 +31,9 @@ import {
   Receipt,
   CreditCard,
   Banknote,
-  X
+  X,
+  HandMetal,
+  AlertCircle
 } from "lucide-react";
 import { format } from "date-fns";
 
@@ -70,6 +70,14 @@ interface TableInfo {
   location: string | null;
 }
 
+interface ServiceRequest {
+  id: string;
+  table_number: string;
+  request_type: string;
+  status: string;
+  created_at: string;
+}
+
 interface LiveTable {
   tableNumber: string;
   orders: Order[];
@@ -77,11 +85,13 @@ interface LiveTable {
   hasReadyOrders: boolean;
   hasServedOrders: boolean;
   allServed: boolean;
+  serviceRequests: ServiceRequest[];
 }
 
 const AdminWaiter = () => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [tables, setTables] = useState<TableInfo[]>([]);
+  const [serviceRequests, setServiceRequests] = useState<ServiceRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [soundEnabled, setSoundEnabled] = useState(true);
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -134,12 +144,32 @@ const AdminWaiter = () => {
     setTables(data || []);
   }, []);
 
+  const fetchServiceRequests = useCallback(async () => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+
+    const { data, error } = await supabase
+      .from("service_requests")
+      .select("*")
+      .eq("status", "pending")
+      .gte("created_at", today.toISOString())
+      .order("created_at", { ascending: false });
+
+    if (error) {
+      console.error("Error fetching service requests:", error);
+      return;
+    }
+
+    setServiceRequests(data || []);
+  }, []);
+
   useEffect(() => {
     fetchOrders();
     fetchTables();
+    fetchServiceRequests();
 
-    // Set up real-time subscription for orders
-    const channel = supabase
+    // Set up real-time subscriptions
+    const ordersChannel = supabase
       .channel("waiter-orders")
       .on(
         "postgres_changes",
@@ -153,10 +183,25 @@ const AdminWaiter = () => {
       )
       .subscribe();
 
+    const requestsChannel = supabase
+      .channel("waiter-requests")
+      .on(
+        "postgres_changes",
+        { event: "*", schema: "public", table: "service_requests" },
+        (payload) => {
+          if (payload.eventType === "INSERT" && soundEnabled) {
+            playNotificationSound();
+          }
+          fetchServiceRequests();
+        }
+      )
+      .subscribe();
+
     return () => {
-      supabase.removeChannel(channel);
+      supabase.removeChannel(ordersChannel);
+      supabase.removeChannel(requestsChannel);
     };
-  }, [fetchOrders, fetchTables, soundEnabled]);
+  }, [fetchOrders, fetchTables, fetchServiceRequests, soundEnabled]);
 
   const playNotificationSound = () => {
     try {
@@ -187,6 +232,20 @@ const AdminWaiter = () => {
     }
   };
 
+  const acknowledgeRequest = async (requestId: string) => {
+    const { error } = await supabase
+      .from("service_requests")
+      .update({ status: "completed" })
+      .eq("id", requestId);
+
+    if (error) {
+      toast({ title: t("Error", "Hata"), description: error.message, variant: "destructive" });
+    } else {
+      toast({ title: t("Success", "Başarılı"), description: t("Request acknowledged", "İstek onaylandı") });
+      fetchServiceRequests();
+    }
+  };
+
   const closeTable = async (tableNumber: string) => {
     // Get all orders for this table that are not completed
     const tableOrders = orders.filter(
@@ -201,6 +260,13 @@ const AdminWaiter = () => {
         .eq("id", order.id);
     }
 
+    // Complete any pending service requests for this table
+    await supabase
+      .from("service_requests")
+      .update({ status: "completed" })
+      .eq("table_number", tableNumber)
+      .eq("status", "pending");
+
     toast({ 
       title: t("Table Closed", "Masa Kapatıldı"), 
       description: t(`Table ${tableNumber} has been closed`, `Masa ${tableNumber} kapatıldı`) 
@@ -209,6 +275,7 @@ const AdminWaiter = () => {
     setShowBillDialog(false);
     setSelectedTable(null);
     fetchOrders();
+    fetchServiceRequests();
   };
 
   const toggleFullscreen = () => {
@@ -256,6 +323,7 @@ const AdminWaiter = () => {
       const hasReadyOrders = tableOrders.some(o => o.status === "ready");
       const hasServedOrders = tableOrders.some(o => o.status === "served");
       const allServed = tableOrders.every(o => o.status === "served");
+      const tableRequests = serviceRequests.filter(r => r.table_number === tableNumber);
       
       liveTables.push({
         tableNumber,
@@ -263,7 +331,8 @@ const AdminWaiter = () => {
         totalAmount,
         hasReadyOrders,
         hasServedOrders,
-        allServed
+        allServed,
+        serviceRequests: tableRequests
       });
     });
 
@@ -279,7 +348,7 @@ const AdminWaiter = () => {
 
   // Stats
   const totalActiveOrders = orders.filter(o => !["completed", "cancelled"].includes(o.status)).length;
-  const tablesWaitingPayment = liveTables.filter(t => t.allServed).length;
+  const pendingRequests = serviceRequests.length;
 
   const handleTableClick = (liveTable: LiveTable) => {
     setSelectedTable(liveTable);
@@ -297,7 +366,7 @@ const AdminWaiter = () => {
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="outline" size="icon" onClick={() => fetchOrders()}>
+          <Button variant="outline" size="icon" onClick={() => { fetchOrders(); fetchServiceRequests(); }}>
             <RefreshCw className="h-4 w-4" />
           </Button>
           <Button
@@ -313,6 +382,58 @@ const AdminWaiter = () => {
           </Button>
         </div>
       </div>
+
+      {/* Service Requests Alert */}
+      {serviceRequests.length > 0 && (
+        <motion.div
+          initial={{ opacity: 0, y: -10 }}
+          animate={{ opacity: 1, y: 0 }}
+          className="bg-yellow-500/10 border border-yellow-500/30 rounded-xl p-4"
+        >
+          <div className="flex items-center gap-2 mb-3">
+            <AlertCircle className="h-5 w-5 text-yellow-500" />
+            <h3 className="font-bold text-yellow-600">
+              {t("Pending Requests", "Bekleyen İstekler")} ({serviceRequests.length})
+            </h3>
+          </div>
+          <div className="grid gap-2 sm:grid-cols-2 lg:grid-cols-3">
+            {serviceRequests.map((request) => (
+              <div 
+                key={request.id}
+                className={`flex items-center justify-between p-3 rounded-lg ${
+                  request.request_type === "call_waiter" 
+                    ? "bg-yellow-500/20" 
+                    : "bg-purple-500/20"
+                }`}
+              >
+                <div className="flex items-center gap-2">
+                  {request.request_type === "call_waiter" ? (
+                    <HandMetal className="h-5 w-5 text-yellow-600" />
+                  ) : (
+                    <Receipt className="h-5 w-5 text-purple-600" />
+                  )}
+                  <div>
+                    <span className="font-bold">
+                      {t("Table", "Masa")} {request.table_number}
+                    </span>
+                    <p className="text-xs text-muted-foreground">
+                      {request.request_type === "call_waiter" 
+                        ? t("Calling Waiter", "Garson Çağırıyor")
+                        : t("Requesting Bill", "Hesap İstiyor")}
+                    </p>
+                  </div>
+                </div>
+                <Button 
+                  size="sm" 
+                  onClick={() => acknowledgeRequest(request.id)}
+                >
+                  <CheckCircle2 className="h-4 w-4" />
+                </Button>
+              </div>
+            ))}
+          </div>
+        </motion.div>
+      )}
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
@@ -349,14 +470,14 @@ const AdminWaiter = () => {
             </div>
           </CardContent>
         </Card>
-        <Card className="border-border/50">
+        <Card className={`border-border/50 ${pendingRequests > 0 ? "border-yellow-500 animate-pulse" : ""}`}>
           <CardContent className="p-4 flex items-center gap-4">
-            <div className="w-12 h-12 rounded-lg bg-purple-500/10 flex items-center justify-center">
-              <Receipt className="h-6 w-6 text-purple-500" />
+            <div className="w-12 h-12 rounded-lg bg-yellow-500/10 flex items-center justify-center">
+              <Bell className="h-6 w-6 text-yellow-500" />
             </div>
             <div>
-              <p className="text-2xl font-bold">{tablesWaitingPayment}</p>
-              <p className="text-sm text-muted-foreground">{t("Awaiting Payment", "Ödeme Bekliyor")}</p>
+              <p className="text-2xl font-bold">{pendingRequests}</p>
+              <p className="text-sm text-muted-foreground">{t("Requests", "İstekler")}</p>
             </div>
           </CardContent>
         </Card>
@@ -390,48 +511,70 @@ const AdminWaiter = () => {
             </Card>
           ) : (
             <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-6 gap-4">
-              {liveTables.map((liveTable, index) => (
-                <motion.div
-                  key={liveTable.tableNumber}
-                  initial={{ opacity: 0, scale: 0.95 }}
-                  animate={{ opacity: 1, scale: 1 }}
-                  transition={{ delay: index * 0.05 }}
-                >
-                  <Card 
-                    className={`cursor-pointer transition-all hover:scale-105 ${
-                      liveTable.allServed 
-                        ? "border-purple-500 bg-purple-500/10" 
-                        : liveTable.hasReadyOrders 
-                          ? "border-green-500 bg-green-500/10 animate-pulse" 
-                          : "border-orange-500/50 bg-orange-500/5"
-                    }`}
-                    onClick={() => handleTableClick(liveTable)}
+              {liveTables.map((liveTable, index) => {
+                const hasCallWaiter = liveTable.serviceRequests.some(r => r.request_type === "call_waiter");
+                const hasRequestBill = liveTable.serviceRequests.some(r => r.request_type === "request_bill");
+                
+                return (
+                  <motion.div
+                    key={liveTable.tableNumber}
+                    initial={{ opacity: 0, scale: 0.95 }}
+                    animate={{ opacity: 1, scale: 1 }}
+                    transition={{ delay: index * 0.05 }}
                   >
-                    <CardContent className="p-4 text-center">
-                      <div className="text-3xl font-bold mb-1">{liveTable.tableNumber}</div>
-                      <div className="text-xs text-muted-foreground mb-2">
-                        {liveTable.orders.length} {t("order(s)", "sipariş")}
-                      </div>
-                      <div className="text-lg font-semibold">₺{liveTable.totalAmount.toFixed(2)}</div>
-                      <div className="mt-2">
-                        {liveTable.hasServedOrders ? (
-                          <Badge className="bg-purple-500/20 text-purple-500 border-purple-500/30">
-                            {t("Served", "Servis Edildi")}
-                          </Badge>
-                        ) : liveTable.hasReadyOrders ? (
-                          <Badge className="bg-green-500/20 text-green-500 border-green-500/30">
-                            {t("Ready", "Hazır")}
-                          </Badge>
-                        ) : (
-                          <Badge className="bg-orange-500/20 text-orange-500 border-orange-500/30">
-                            {t("In Progress", "Hazırlanıyor")}
-                          </Badge>
-                        )}
-                      </div>
-                    </CardContent>
-                  </Card>
-                </motion.div>
-              ))}
+                    <Card 
+                      className={`cursor-pointer transition-all hover:scale-105 relative ${
+                        hasCallWaiter || hasRequestBill
+                          ? "border-yellow-500 bg-yellow-500/10 animate-pulse"
+                          : liveTable.hasServedOrders 
+                            ? "border-purple-500 bg-purple-500/10" 
+                            : liveTable.hasReadyOrders 
+                              ? "border-green-500 bg-green-500/10" 
+                              : "border-orange-500/50 bg-orange-500/5"
+                      }`}
+                      onClick={() => handleTableClick(liveTable)}
+                    >
+                      {/* Request Indicators */}
+                      {(hasCallWaiter || hasRequestBill) && (
+                        <div className="absolute -top-2 -right-2 flex gap-1">
+                          {hasCallWaiter && (
+                            <div className="w-6 h-6 rounded-full bg-yellow-500 flex items-center justify-center">
+                              <HandMetal className="h-3 w-3 text-white" />
+                            </div>
+                          )}
+                          {hasRequestBill && (
+                            <div className="w-6 h-6 rounded-full bg-purple-500 flex items-center justify-center">
+                              <Receipt className="h-3 w-3 text-white" />
+                            </div>
+                          )}
+                        </div>
+                      )}
+                      <CardContent className="p-4 text-center">
+                        <div className="text-3xl font-bold mb-1">{liveTable.tableNumber}</div>
+                        <div className="text-xs text-muted-foreground mb-2">
+                          {liveTable.orders.length} {t("order(s)", "sipariş")}
+                        </div>
+                        <div className="text-lg font-semibold">₺{liveTable.totalAmount.toFixed(2)}</div>
+                        <div className="mt-2">
+                          {liveTable.hasServedOrders ? (
+                            <Badge className="bg-purple-500/20 text-purple-500 border-purple-500/30">
+                              {t("Served", "Servis Edildi")}
+                            </Badge>
+                          ) : liveTable.hasReadyOrders ? (
+                            <Badge className="bg-green-500/20 text-green-500 border-green-500/30">
+                              {t("Ready", "Hazır")}
+                            </Badge>
+                          ) : (
+                            <Badge className="bg-orange-500/20 text-orange-500 border-orange-500/30">
+                              {t("In Progress", "Hazırlanıyor")}
+                            </Badge>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </motion.div>
+                );
+              })}
             </div>
           )}
         </TabsContent>
@@ -576,6 +719,36 @@ const AdminWaiter = () => {
           
           {selectedTable && (
             <div className="space-y-4">
+              {/* Service Requests for this table */}
+              {selectedTable.serviceRequests.length > 0 && (
+                <div className="bg-yellow-500/10 border border-yellow-500/30 rounded-lg p-3">
+                  <h4 className="font-medium text-yellow-600 mb-2">{t("Requests", "İstekler")}</h4>
+                  <div className="space-y-2">
+                    {selectedTable.serviceRequests.map((request) => (
+                      <div key={request.id} className="flex items-center justify-between">
+                        <span className="flex items-center gap-2 text-sm">
+                          {request.request_type === "call_waiter" ? (
+                            <>
+                              <HandMetal className="h-4 w-4 text-yellow-600" />
+                              {t("Call Waiter", "Garson Çağır")}
+                            </>
+                          ) : (
+                            <>
+                              <Receipt className="h-4 w-4 text-purple-600" />
+                              {t("Request Bill", "Hesap İste")}
+                            </>
+                          )}
+                        </span>
+                        <Button size="sm" variant="outline" onClick={() => acknowledgeRequest(request.id)}>
+                          <CheckCircle2 className="h-3 w-3 mr-1" />
+                          {t("Done", "Tamam")}
+                        </Button>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              )}
+
               {/* Orders List */}
               {selectedTable.orders.map((order) => (
                 <Card key={order.id} className="border-border/50">
@@ -631,7 +804,7 @@ const AdminWaiter = () => {
                   <span>{selectedTable.orders.length} {t("order(s)", "sipariş")}</span>
                   <span>•</span>
                   <span>
-                    {selectedTable.orders[0]?.payment_method === "cash" ? (
+                    {selectedTable.orders[0]?.payment_method === "cash_at_table" ? (
                       <span className="flex items-center gap-1">
                         <Banknote className="h-3 w-3" /> {t("Cash", "Nakit")}
                       </span>
@@ -651,15 +824,13 @@ const AdminWaiter = () => {
               <X className="h-4 w-4 mr-2" />
               {t("Close", "Kapat")}
             </Button>
-            {selectedTable?.allServed && (
-              <Button 
-                onClick={() => closeTable(selectedTable.tableNumber)}
-                className="flex-1 bg-green-600 hover:bg-green-700"
-              >
-                <CheckCircle2 className="h-4 w-4 mr-2" />
-                {t("Payment Received - Close Table", "Ödeme Alındı - Masayı Kapat")}
-              </Button>
-            )}
+            <Button 
+              onClick={() => selectedTable && closeTable(selectedTable.tableNumber)}
+              className="flex-1 bg-green-600 hover:bg-green-700"
+            >
+              <CheckCircle2 className="h-4 w-4 mr-2" />
+              {t("Payment Received - Close Table", "Ödeme Alındı - Masayı Kapat")}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>

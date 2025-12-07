@@ -644,6 +644,44 @@ export type Database = {
         }
         Relationships: []
       }
+      service_requests: {
+        Row: {
+          created_at: string
+          id: string
+          order_id: string | null
+          request_type: string
+          status: string
+          table_number: string
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          order_id?: string | null
+          request_type: string
+          status?: string
+          table_number: string
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          order_id?: string | null
+          request_type?: string
+          status?: string
+          table_number?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "service_requests_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       special_events: {
         Row: {
           capacity: number | null
