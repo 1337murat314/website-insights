@@ -7,6 +7,7 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
+import { PhoneInput } from "@/components/ui/phone-input";
 import { Calendar, Clock, Users, MapPin, Check, Loader2, Armchair } from "lucide-react";
 import { useToast } from "@/hooks/use-toast";
 import { supabase } from "@/integrations/supabase/client";
@@ -308,10 +309,9 @@ const Reservations = () => {
 
                 <div className="space-y-2">
                   <Label>{t("Phone", "Telefon")}</Label>
-                  <Input
-                    type="tel"
+                  <PhoneInput
                     value={formData.phone}
-                    onChange={(e) => updateFormData("phone", e.target.value)}
+                    onChange={(value) => updateFormData("phone", value)}
                     placeholder={t("Enter your phone", "Telefonunuzu girin")}
                   />
                 </div>
