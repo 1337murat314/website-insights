@@ -459,6 +459,8 @@ const AdminOrders = () => {
     return flow[currentStatus] || null;
   };
 
+  console.log("AdminOrders render:", { loading, error, ordersCount: orders.length });
+
   if (loading) {
     return (
       <div className="flex items-center justify-center min-h-[400px]">
