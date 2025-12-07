@@ -600,7 +600,7 @@ const Waiter = () => {
             {liveTables.map((liveTable) => {
               const hasCallWaiter = liveTable.serviceRequests.some(r => r.request_type === "call_waiter");
               const hasRequestBill = liveTable.serviceRequests.some(r => r.request_type === "request_bill");
-              const hasKitchenOrders = liveTable.orders.some(o => ["new", "preparing"].includes(o.status));
+              const hasKitchenOrders = liveTable.orders.some(o => ["new", "accepted", "preparing", "in_progress"].includes(o.status));
               
               return (
                 <motion.div
