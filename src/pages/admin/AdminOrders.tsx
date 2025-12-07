@@ -635,19 +635,25 @@ const AdminOrders = () => {
             })}
           </div>
 
-          {/* Orders Grid */}
+          {/* Orders Grid - Compact View with All Info */}
           {loading ? (
             <div className="text-center py-12">
               <RefreshCw className="w-8 h-8 animate-spin mx-auto text-primary" />
             </div>
           ) : (
-            <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-4">
+            <div className="grid md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3">
               <AnimatePresence mode="popLayout">
                 {filteredOrders.map((order) => {
                   const status = getStatusConfig(order.status);
                   const OrderTypeIcon = orderTypeIcons[order.order_type] || Package;
                   const PaymentIcon = paymentIcons[order.payment_method] || CreditCard;
                   const nextStatus = getNextStatus(order.status);
+                  const items = orderItems[order.id] || [];
+
+                  // Fetch items if not loaded
+                  if (!orderItems[order.id]) {
+                    fetchOrderItems(order.id);
+                  }
 
                   return (
                     <motion.div
@@ -656,107 +662,117 @@ const AdminOrders = () => {
                       initial={{ opacity: 0, scale: 0.95 }}
                       animate={{ opacity: 1, scale: 1 }}
                       exit={{ opacity: 0, scale: 0.95 }}
-                      className="bg-card rounded-xl p-5 border border-border hover:border-primary/50 transition-colors"
+                      className="bg-card rounded-xl border border-border hover:border-primary/50 transition-colors overflow-hidden"
                     >
-                      {/* Header */}
-                      <div className="flex items-start justify-between mb-4">
-                        <div>
-                          <div className="flex items-center gap-2 mb-1">
-                            <span className="text-xl font-bold">#{order.order_number}</span>
-                            <Badge className={`${status.color} text-white`}>
-                              {language === "en" ? status.label : status.labelTr}
+                      {/* Compact Header */}
+                      <div className={`px-3 py-2 flex items-center justify-between ${status.color}`}>
+                        <div className="flex items-center gap-2">
+                          <span className="text-white font-bold">#{order.order_number}</span>
+                          {order.table_number && (
+                            <Badge variant="secondary" className="bg-white/20 text-white border-0 text-xs">
+                              {t("T", "M")}{order.table_number}
                             </Badge>
-                          </div>
-                          <p className="text-sm text-muted-foreground">
-                            {format(new Date(order.created_at), "MMM d, HH:mm")}
-                          </p>
+                          )}
                         </div>
-                        <div className="flex gap-1">
-                          <div className="p-2 rounded-lg bg-muted" title={order.order_type}>
-                            <OrderTypeIcon className="w-4 h-4" />
-                          </div>
-                          <div className="p-2 rounded-lg bg-muted" title={order.payment_method}>
-                            <PaymentIcon className="w-4 h-4" />
-                          </div>
+                        <div className="flex items-center gap-1">
+                          <OrderTypeIcon className="w-3.5 h-3.5 text-white/80" />
+                          <PaymentIcon className="w-3.5 h-3.5 text-white/80" />
+                          <span className="text-white/80 text-xs ml-1">
+                            {format(new Date(order.created_at), "HH:mm")}
+                          </span>
                         </div>
                       </div>
 
-                      {/* Table Number */}
-                      {order.table_number && (
-                        <div className="mb-4">
-                          <p className="text-lg font-bold text-primary">
-                            {t("Table", "Masa")} {order.table_number}
-                          </p>
+                      {/* Order Items - Compact List */}
+                      <div className="px-3 py-2 max-h-32 overflow-y-auto border-b border-border/50">
+                        {items.length === 0 ? (
+                          <div className="text-xs text-muted-foreground animate-pulse">{t("Loading...", "Yükleniyor...")}</div>
+                        ) : (
+                          <div className="space-y-1">
+                            {items.map((item) => (
+                              <div key={item.id} className="flex items-start justify-between text-sm">
+                                <div className="flex-1 min-w-0">
+                                  <span className="font-medium text-primary">{item.quantity}x</span>{" "}
+                                  <span className="truncate">
+                                    {language === "en" ? item.item_name : item.item_name_tr || item.item_name}
+                                  </span>
+                                  {item.modifiers?.length > 0 && (
+                                    <span className="text-xs text-muted-foreground ml-1">
+                                      ({item.modifiers.map((m: any) => language === "en" ? m.name : m.nameTr || m.name).join(", ")})
+                                    </span>
+                                  )}
+                                  {item.special_instructions && (
+                                    <p className="text-xs text-amber-500 truncate">⚠️ {item.special_instructions}</p>
+                                  )}
+                                </div>
+                                <span className="text-xs text-muted-foreground ml-1">₺{item.total_price.toFixed(0)}</span>
+                              </div>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+
+                      {/* Notes if any */}
+                      {order.notes && (
+                        <div className="px-3 py-1.5 bg-amber-500/10 border-b border-border/50">
+                          <p className="text-xs text-amber-600 truncate">📝 {order.notes}</p>
                         </div>
                       )}
 
-                      {/* Total */}
-                      <div className="flex items-center justify-between mb-4 p-3 bg-background rounded-lg">
-                        <span className="text-sm text-muted-foreground">{t("Total", "Toplam")}</span>
-                        <span className="text-xl font-bold text-primary">₺{order.total.toFixed(2)}</span>
-                      </div>
-
-                      {/* Actions */}
-                      <div className="flex gap-2">
-                        <Button
-                          variant="outline"
-                          size="sm"
-                          className="flex-1"
-                          onClick={() => openOrderDetail(order)}
-                        >
-                          <Eye className="w-4 h-4 mr-1" />
-                          {t("Details", "Detay")}
-                        </Button>
-                        {nextStatus && (
-                          <Button
-                            size="sm"
-                            className="flex-1 bg-primary hover:bg-primary/90"
-                            onClick={() => updateOrderStatus(order.id, nextStatus)}
-                          >
-                            {language === "en"
-                              ? statusConfig[nextStatus].label
-                              : statusConfig[nextStatus].labelTr}
-                          </Button>
-                        )}
-                        {/* More Actions Dropdown */}
-                        <DropdownMenu>
-                          <DropdownMenuTrigger asChild>
-                            <Button variant="outline" size="sm">
-                              <MoreVertical className="w-4 h-4" />
-                            </Button>
-                          </DropdownMenuTrigger>
-                          <DropdownMenuContent align="end" className="w-48">
-                            <DropdownMenuItem onClick={() => openActionDialog(order, "customer_cancelled")}>
-                              <Ban className="w-4 h-4 mr-2 text-red-400" />
-                              {t("Customer Cancelled", "Müşteri İptali")}
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => openActionDialog(order, "kitchen_cancelled")}>
-                              <AlertCircle className="w-4 h-4 mr-2 text-orange-500" />
-                              {t("Kitchen Cancelled", "Mutfak İptali")}
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => openActionDialog(order, "out_of_stock")}>
-                              <AlertTriangle className="w-4 h-4 mr-2 text-yellow-600" />
-                              {t("Out of Stock", "Stokta Yok")}
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem onClick={() => openActionDialog(order, "modified")}>
-                              <Edit3 className="w-4 h-4 mr-2 text-cyan-500" />
-                              {t("Order Modified", "Sipariş Değiştirildi")}
-                            </DropdownMenuItem>
-                            <DropdownMenuItem onClick={() => openActionDialog(order, "refunded")}>
-                              <RotateCcw className="w-4 h-4 mr-2 text-purple-500" />
-                              {t("Refund / Return", "İade")}
-                            </DropdownMenuItem>
-                            <DropdownMenuSeparator />
-                            <DropdownMenuItem 
-                              onClick={() => openActionDialog(order, "cancelled")}
-                              className="text-destructive focus:text-destructive"
+                      {/* Footer with Total and Actions */}
+                      <div className="px-3 py-2 flex items-center justify-between gap-2">
+                        <span className="text-lg font-bold text-primary">₺{order.total.toFixed(0)}</span>
+                        <div className="flex gap-1">
+                          {nextStatus && (
+                            <Button
+                              size="sm"
+                              className="h-7 px-2 text-xs"
+                              onClick={() => updateOrderStatus(order.id, nextStatus)}
                             >
-                              <XCircle className="w-4 h-4 mr-2" />
-                              {t("Cancel Order", "Siparişi İptal Et")}
-                            </DropdownMenuItem>
-                          </DropdownMenuContent>
-                        </DropdownMenu>
+                              {language === "en"
+                                ? statusConfig[nextStatus]?.label || nextStatus
+                                : statusConfig[nextStatus]?.labelTr || nextStatus}
+                            </Button>
+                          )}
+                          <DropdownMenu>
+                            <DropdownMenuTrigger asChild>
+                              <Button variant="outline" size="sm" className="h-7 w-7 p-0">
+                                <MoreVertical className="w-3.5 h-3.5" />
+                              </Button>
+                            </DropdownMenuTrigger>
+                            <DropdownMenuContent align="end" className="w-44">
+                              <DropdownMenuItem onClick={() => openOrderDetail(order)}>
+                                <Eye className="w-4 h-4 mr-2" />
+                                {t("Full Details", "Tüm Detaylar")}
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem onClick={() => openActionDialog(order, "customer_cancelled")}>
+                                <Ban className="w-4 h-4 mr-2 text-red-400" />
+                                {t("Customer Cancel", "Müşteri İptal")}
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => openActionDialog(order, "kitchen_cancelled")}>
+                                <AlertCircle className="w-4 h-4 mr-2 text-orange-500" />
+                                {t("Kitchen Cancel", "Mutfak İptal")}
+                              </DropdownMenuItem>
+                              <DropdownMenuItem onClick={() => openActionDialog(order, "out_of_stock")}>
+                                <AlertTriangle className="w-4 h-4 mr-2 text-yellow-600" />
+                                {t("Out of Stock", "Stokta Yok")}
+                              </DropdownMenuItem>
+                              <DropdownMenuSeparator />
+                              <DropdownMenuItem onClick={() => openActionDialog(order, "refunded")}>
+                                <RotateCcw className="w-4 h-4 mr-2 text-purple-500" />
+                                {t("Refund", "İade")}
+                              </DropdownMenuItem>
+                              <DropdownMenuItem 
+                                onClick={() => openActionDialog(order, "cancelled")}
+                                className="text-destructive focus:text-destructive"
+                              >
+                                <XCircle className="w-4 h-4 mr-2" />
+                                {t("Cancel", "İptal Et")}
+                              </DropdownMenuItem>
+                            </DropdownMenuContent>
+                          </DropdownMenu>
+                        </div>
                       </div>
                     </motion.div>
                   );

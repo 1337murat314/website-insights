@@ -591,7 +591,7 @@ const Waiter = () => {
         </div>
       )}
 
-      {/* Live Tables Grid */}
+      {/* Live Tables - Expanded Cards with All Info */}
       <div className="p-3">
         <h2 className="text-sm font-medium text-muted-foreground mb-2 flex items-center gap-2">
           <TableProperties className="w-4 h-4" />
@@ -605,67 +605,140 @@ const Waiter = () => {
             </CardContent>
           </Card>
         ) : (
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {liveTables.map((liveTable) => {
               const hasCallWaiter = liveTable.serviceRequests.some(r => r.request_type === "call_waiter");
               const hasRequestBill = liveTable.serviceRequests.some(r => r.request_type === "request_bill");
               const hasKitchenOrders = liveTable.orders.some(o => ["new", "accepted", "preparing", "in_progress"].includes(o.status));
               
               return (
-                <motion.div
+                <Card 
                   key={liveTable.tableNumber}
-                  whileTap={{ scale: 0.95 }}
+                  className={`overflow-hidden ${
+                    hasCallWaiter || hasRequestBill
+                      ? "border-yellow-500 bg-yellow-500/5"
+                      : liveTable.hasReadyOrders 
+                        ? "border-green-500 bg-green-500/5" 
+                        : liveTable.hasServedOrders
+                          ? "border-purple-500 bg-purple-500/5"
+                          : hasKitchenOrders
+                            ? "border-orange-500 bg-orange-500/5"
+                            : "border-border"
+                  }`}
                 >
-                  <Card 
-                    className={`cursor-pointer relative overflow-hidden ${
-                      hasCallWaiter || hasRequestBill
-                        ? "border-yellow-500 bg-yellow-500/10 animate-pulse"
-                        : liveTable.hasReadyOrders 
-                          ? "border-green-500 bg-green-500/10" 
-                          : liveTable.hasServedOrders
-                            ? "border-purple-500 bg-purple-500/10"
-                            : hasKitchenOrders
-                              ? "border-orange-500 bg-orange-500/10"
-                              : "border-border"
-                    }`}
-                    onClick={() => { setSelectedTable(liveTable); setShowBillDialog(true); }}
-                  >
-                    {(hasCallWaiter || hasRequestBill) && (
-                      <div className="absolute top-1 right-1 flex gap-0.5">
-                        {hasCallWaiter && (
-                          <div className="w-5 h-5 rounded-full bg-yellow-500 flex items-center justify-center">
-                            <HandMetal className="h-3 w-3 text-white" />
-                          </div>
-                        )}
-                        {hasRequestBill && (
-                          <div className="w-5 h-5 rounded-full bg-purple-500 flex items-center justify-center">
-                            <Receipt className="h-3 w-3 text-white" />
+                  {/* Table Header */}
+                  <div className={`px-3 py-2 flex items-center justify-between ${
+                    hasCallWaiter || hasRequestBill
+                      ? "bg-yellow-500"
+                      : liveTable.hasReadyOrders 
+                        ? "bg-green-500" 
+                        : liveTable.hasServedOrders
+                          ? "bg-purple-500"
+                          : hasKitchenOrders
+                            ? "bg-orange-500"
+                            : "bg-primary"
+                  }`}>
+                    <div className="flex items-center gap-2">
+                      <span className="text-lg font-bold text-white">{t("Table", "Masa")} {liveTable.tableNumber}</span>
+                      {(hasCallWaiter || hasRequestBill) && (
+                        <div className="flex gap-1">
+                          {hasCallWaiter && <HandMetal className="h-4 w-4 text-white animate-bounce" />}
+                          {hasRequestBill && <Receipt className="h-4 w-4 text-white animate-bounce" />}
+                        </div>
+                      )}
+                    </div>
+                    <span className="text-lg font-bold text-white">₺{liveTable.totalAmount.toFixed(0)}</span>
+                  </div>
+
+                  <CardContent className="p-2 space-y-1.5">
+                    {/* Service Requests */}
+                    {liveTable.serviceRequests.map((request) => (
+                      <div 
+                        key={request.id}
+                        className={`flex items-center justify-between p-2 rounded-lg text-sm ${
+                          request.request_type === "call_waiter" 
+                            ? "bg-yellow-500/20" 
+                            : "bg-purple-500/20"
+                        }`}
+                      >
+                        <span className="flex items-center gap-1.5 font-medium">
+                          {request.request_type === "call_waiter" ? (
+                            <><HandMetal className="h-3.5 w-3.5" /> {t("Calling", "Çağırıyor")}</>
+                          ) : (
+                            <><Receipt className="h-3.5 w-3.5" /> {t("Bill", "Hesap")}</>
+                          )}
+                        </span>
+                        <Button size="sm" className="h-7 px-2" onClick={() => acknowledgeRequest(request.id)}>
+                          <CheckCircle2 className="h-3.5 w-3.5" />
+                        </Button>
+                      </div>
+                    ))}
+
+                    {/* All Order Items Expanded */}
+                    {liveTable.orders.map((order) => (
+                      <div key={order.id} className="border rounded-lg overflow-hidden">
+                        <div className="px-2 py-1 bg-muted/50 flex items-center justify-between">
+                          <span className="text-xs font-medium">#{order.order_number}</span>
+                          <Badge variant="outline" className={`text-[10px] h-5 ${
+                            order.status === "ready" ? "border-green-500 text-green-600" : 
+                            order.status === "served" ? "border-purple-500 text-purple-600" :
+                            order.status === "preparing" ? "border-orange-500 text-orange-600" : 
+                            "border-blue-500 text-blue-600"
+                          }`}>
+                            {order.status === "ready" ? t("Ready", "Hazır") : 
+                             order.status === "served" ? t("Served", "Servis") :
+                             order.status === "preparing" ? t("Cooking", "Pişiyor") : 
+                             t("New", "Yeni")}
+                          </Badge>
+                        </div>
+                        <div className="px-2 py-1.5 space-y-0.5">
+                          {order.items.map((item) => (
+                            <div key={item.id} className="flex items-center justify-between text-sm">
+                              <span className="flex-1">
+                                <span className="font-medium text-primary">{item.quantity}x</span>{" "}
+                                {language === "tr" && item.item_name_tr ? item.item_name_tr : item.item_name}
+                              </span>
+                              <span className="text-xs text-muted-foreground">₺{item.total_price.toFixed(0)}</span>
+                            </div>
+                          ))}
+                        </div>
+                        {order.status === "ready" && (
+                          <div className="px-2 pb-1.5">
+                            <Button 
+                              size="sm" 
+                              className="w-full h-8 text-xs bg-green-600 hover:bg-green-700"
+                              onClick={() => markAsServed(order.id)}
+                            >
+                              <CheckCircle2 className="h-3.5 w-3.5 mr-1" />
+                              {t("Served", "Teslim")}
+                            </Button>
                           </div>
                         )}
                       </div>
-                    )}
-                    <CardContent className="p-3 text-center">
-                      <div className="text-2xl font-bold">{liveTable.tableNumber}</div>
-                      <div className="text-sm font-medium text-primary">₺{liveTable.totalAmount.toFixed(0)}</div>
-                      <div className="mt-1">
-                        {liveTable.hasReadyOrders ? (
-                          <Badge className="text-[10px] px-1.5 py-0 bg-green-500/20 text-green-600 border-green-500">
-                            {t("Ready", "Hazır")}
-                          </Badge>
-                        ) : liveTable.hasServedOrders ? (
-                          <Badge className="text-[10px] px-1.5 py-0 bg-purple-500/20 text-purple-600 border-purple-500">
-                            {t("Served", "Servis")}
-                          </Badge>
-                        ) : hasKitchenOrders ? (
-                          <Badge className="text-[10px] px-1.5 py-0 bg-orange-500/20 text-orange-600 border-orange-500">
-                            <ChefHat className="w-2.5 h-2.5 mr-0.5" />
-                            {t("Kitchen", "Mutfak")}
-                          </Badge>
-                        ) : null}
-                      </div>
-                    </CardContent>
-                  </Card>
-                </motion.div>
+                    ))}
+
+                    {/* Table Actions */}
+                    <div className="flex gap-1.5 pt-1">
+                      <Button 
+                        variant="outline" 
+                        size="sm" 
+                        className="flex-1 h-9 text-xs"
+                        onClick={() => { setSelectedTable(liveTable); setShowBillDialog(true); }}
+                      >
+                        <Edit className="h-3.5 w-3.5 mr-1" />
+                        {t("Edit", "Düzenle")}
+                      </Button>
+                      <Button 
+                        size="sm"
+                        className="flex-1 h-9 text-xs bg-green-600 hover:bg-green-700"
+                        onClick={() => closeTable(liveTable.tableNumber)}
+                      >
+                        <CheckCircle2 className="h-3.5 w-3.5 mr-1" />
+                        {t("Close", "Kapat")}
+                      </Button>
+                    </div>
+                  </CardContent>
+                </Card>
               );
             })}
           </div>

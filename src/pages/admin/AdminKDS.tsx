@@ -251,8 +251,8 @@ const AdminKDS = () => {
         </div>
       </div>
 
-      {/* Orders Grid - Kanban Style */}
-      <div className="grid grid-cols-3 gap-4 p-4 h-[calc(100vh-80px)] overflow-hidden">
+      {/* Orders Grid - Optimized Kanban for High Volume */}
+      <div className="grid grid-cols-3 gap-2 p-2 h-[calc(100vh-80px)] overflow-hidden">
         {statusFlow.map((status) => {
           const config = statusConfig[status];
           const statusOrders = ordersByStatus[status];
@@ -260,17 +260,17 @@ const AdminKDS = () => {
           return (
             <div key={status} className="flex flex-col h-full">
               {/* Column Header */}
-              <div className={`p-3 rounded-t-xl border-2 ${config.bgColor} flex items-center justify-between`}>
-                <span className={`font-bold text-lg ${config.color}`}>
+              <div className={`p-2 rounded-t-lg border-2 ${config.bgColor} flex items-center justify-between`}>
+                <span className={`font-bold ${config.color}`}>
                   {language === "en" ? config.label : config.labelTr}
                 </span>
-                <Badge variant="secondary" className="text-lg">
+                <Badge variant="secondary" className="text-sm">
                   {statusOrders.length}
                 </Badge>
               </div>
 
-              {/* Orders List */}
-              <div className="flex-1 overflow-y-auto bg-card/50 rounded-b-xl border border-t-0 border-border p-2 space-y-3">
+              {/* Orders List - Compact */}
+              <div className="flex-1 overflow-y-auto bg-card/50 rounded-b-lg border border-t-0 border-border p-1.5 space-y-1.5">
                 <AnimatePresence mode="popLayout">
                   {statusOrders.map((order) => {
                     const items = orderItems[order.id] || [];
@@ -280,47 +280,47 @@ const AdminKDS = () => {
                       <motion.div
                         key={order.id}
                         layout
-                        initial={{ opacity: 0, scale: 0.9 }}
+                        initial={{ opacity: 0, scale: 0.95 }}
                         animate={{ opacity: 1, scale: 1 }}
-                        exit={{ opacity: 0, scale: 0.9 }}
-                        className={`bg-card rounded-xl border-2 ${config.bgColor} overflow-hidden`}
+                        exit={{ opacity: 0, scale: 0.95 }}
+                        className={`bg-card rounded-lg border ${config.bgColor} overflow-hidden`}
                       >
-                        {/* Order Header */}
-                        <div className="p-3 border-b border-border flex items-center justify-between">
-                          <div className="flex items-center gap-3">
-                            <span className="text-2xl font-bold">#{order.order_number}</span>
+                        {/* Compact Order Header */}
+                        <div className="px-2 py-1.5 border-b border-border/50 flex items-center justify-between bg-background/50">
+                          <div className="flex items-center gap-2">
+                            <span className="text-lg font-bold">#{order.order_number}</span>
                             {order.table_number && (
-                              <Badge className="text-lg px-3 py-1 bg-primary">
-                                {t("Table", "Masa")} {order.table_number}
+                              <Badge className="text-sm px-2 py-0 bg-primary">
+                                {t("T", "M")}{order.table_number}
                               </Badge>
                             )}
                           </div>
-                          <div className={`flex items-center gap-1 ${getTimeColor(order.created_at)}`}>
-                            <Clock className="w-5 h-5" />
-                            <span className="font-bold text-lg">{getTimeSinceOrder(order.created_at)}</span>
+                          <div className={`flex items-center gap-1 text-sm ${getTimeColor(order.created_at)}`}>
+                            <Clock className="w-3.5 h-3.5" />
+                            <span className="font-bold">{getTimeSinceOrder(order.created_at)}</span>
                           </div>
                         </div>
 
-                        {/* Order Items */}
-                        <div className="p-3 space-y-2">
+                        {/* Compact Order Items */}
+                        <div className="px-2 py-1.5 space-y-0.5 max-h-28 overflow-y-auto">
                           {items.map((item) => (
-                            <div key={item.id} className="flex items-start gap-2">
-                              <span className="text-xl font-bold text-primary min-w-[2rem]">
+                            <div key={item.id} className="flex items-start gap-1.5 text-sm">
+                              <span className="font-bold text-primary shrink-0">
                                 {item.quantity}x
                               </span>
-                              <div className="flex-1">
-                                <p className="font-semibold text-lg">
+                              <div className="flex-1 min-w-0">
+                                <span className="font-medium">
                                   {language === "en" ? item.item_name : item.item_name_tr || item.item_name}
-                                </p>
+                                </span>
                                 {item.modifiers.length > 0 && (
-                                  <p className="text-sm text-muted-foreground">
-                                    {item.modifiers.map((m) => 
+                                  <span className="text-xs text-muted-foreground ml-1">
+                                    ({item.modifiers.map((m) => 
                                       language === "en" ? m.name : m.nameTr || m.name
-                                    ).join(", ")}
-                                  </p>
+                                    ).join(", ")})
+                                  </span>
                                 )}
                                 {item.special_instructions && (
-                                  <p className="text-sm text-amber-500 font-medium mt-1">
+                                  <p className="text-xs text-amber-500 font-medium truncate">
                                     ⚠️ {item.special_instructions}
                                   </p>
                                 )}
@@ -329,53 +329,51 @@ const AdminKDS = () => {
                           ))}
                         </div>
 
-                        {/* Order Notes */}
+                        {/* Compact Notes */}
                         {order.notes && (
-                          <div className="px-3 pb-2">
-                            <p className="text-sm text-amber-500 bg-amber-500/10 p-2 rounded-lg">
-                              📝 {order.notes}
-                            </p>
+                          <div className="px-2 py-1 bg-amber-500/10">
+                            <p className="text-xs text-amber-500 truncate">📝 {order.notes}</p>
                           </div>
                         )}
 
-                        {/* Action Button */}
-                        <div className="p-3 pt-0">
-                          {nextStatus && (
+                        {/* Compact Action Button */}
+                        {nextStatus && (
+                          <div className="p-1.5">
                             <Button
                               onClick={() => updateOrderStatus(order.id, nextStatus)}
-                              className="w-full h-14 text-lg font-bold"
+                              className="w-full h-10 text-sm font-bold"
                               variant="default"
                             >
                               {nextStatus === "preparing" && (
                                 <>
-                                  <ChefHat className="w-6 h-6 mr-2" />
-                                  {t("START COOKING", "PİŞİRMEYE BAŞLA")}
+                                  <ChefHat className="w-4 h-4 mr-1" />
+                                  {t("START", "BAŞLA")}
                                 </>
                               )}
                               {nextStatus === "ready" && (
                                 <>
-                                  <Package className="w-6 h-6 mr-2" />
+                                  <Package className="w-4 h-4 mr-1" />
                                   {t("READY", "HAZIR")}
                                 </>
                               )}
                               {nextStatus === "served" && (
                                 <>
-                                  <CheckCircle2 className="w-6 h-6 mr-2" />
+                                  <CheckCircle2 className="w-4 h-4 mr-1" />
                                   {t("PICKED UP", "ALINDI")}
                                 </>
                               )}
                             </Button>
-                          )}
-                        </div>
+                          </div>
+                        )}
                       </motion.div>
                     );
                   })}
                 </AnimatePresence>
 
                 {statusOrders.length === 0 && (
-                  <div className="flex flex-col items-center justify-center h-32 text-muted-foreground">
-                    <Package className="w-8 h-8 mb-2 opacity-50" />
-                    <p className="text-sm">{t("No orders", "Sipariş yok")}</p>
+                  <div className="flex flex-col items-center justify-center h-24 text-muted-foreground">
+                    <Package className="w-6 h-6 mb-1 opacity-50" />
+                    <p className="text-xs">{t("No orders", "Sipariş yok")}</p>
                   </div>
                 )}
               </div>
