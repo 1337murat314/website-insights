@@ -18,6 +18,7 @@ import Reservations from "./pages/Reservations";
 import OrderOnline from "./pages/OrderOnline";
 import Checkout from "./pages/Checkout";
 import OrderTracking from "./pages/OrderTracking";
+import Catering from "./pages/Catering";
 import NotFound from "./pages/NotFound";
 
 // Admin imports
@@ -67,6 +68,7 @@ const AnimatedRoutes = () => {
         <Route path="/about" element={<About />} />
         <Route path="/contact" element={<Contact />} />
         <Route path="/reservations" element={<Reservations />} />
+        <Route path="/catering" element={<Catering />} />
         
         {/* Staff routes */}
         <Route path="/kitchen-login" element={<KitchenLogin />} />
