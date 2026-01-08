@@ -164,6 +164,57 @@ export type Database = {
         }
         Relationships: []
       }
+      catering_leads: {
+        Row: {
+          created_at: string
+          customer_email: string
+          customer_name: string
+          customer_phone: string
+          event_date: string | null
+          event_type: string | null
+          guest_count: number | null
+          id: string
+          notes: string | null
+          quote_number: string
+          selected_products: Json
+          status: string
+          total_amount: number
+          updated_at: string
+        }
+        Insert: {
+          created_at?: string
+          customer_email: string
+          customer_name: string
+          customer_phone: string
+          event_date?: string | null
+          event_type?: string | null
+          guest_count?: number | null
+          id?: string
+          notes?: string | null
+          quote_number: string
+          selected_products?: Json
+          status?: string
+          total_amount?: number
+          updated_at?: string
+        }
+        Update: {
+          created_at?: string
+          customer_email?: string
+          customer_name?: string
+          customer_phone?: string
+          event_date?: string | null
+          event_type?: string | null
+          guest_count?: number | null
+          id?: string
+          notes?: string | null
+          quote_number?: string
+          selected_products?: Json
+          status?: string
+          total_amount?: number
+          updated_at?: string
+        }
+        Relationships: []
+      }
       catering_products: {
         Row: {
           category: string
