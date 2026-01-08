@@ -82,6 +82,13 @@ const Reservations = () => {
       ? `[Seating: ${seatingLabel}]${formData.specialRequests ? ` ${formData.specialRequests}` : ""}`
       : formData.specialRequests || null;
 
+    // Look up the branch UUID from the database using the slug
+    const { data: branchData } = await supabase
+      .from("branches")
+      .select("id")
+      .eq("slug", formData.branch)
+      .single();
+
     const { error } = await supabase.from("reservations").insert({
       guest_name: formData.name,
       guest_email: "-",
@@ -91,6 +98,7 @@ const Reservations = () => {
       reservation_time: formData.time,
       special_requests: specialRequestsWithSeating,
       status: "pending",
+      branch_id: branchData?.id || null,
     });
 
     if (error) {
