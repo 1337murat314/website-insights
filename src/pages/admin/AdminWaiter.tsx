@@ -77,7 +77,11 @@ interface LiveTable {
   serviceRequests: ServiceRequest[];
 }
 
-const AdminWaiter = () => {
+interface AdminWaiterProps {
+  branchId?: string;
+}
+
+const AdminWaiter = ({ branchId }: AdminWaiterProps) => {
   const [orders, setOrders] = useState<Order[]>([]);
   const [serviceRequests, setServiceRequests] = useState<ServiceRequest[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -103,8 +107,13 @@ const AdminWaiter = () => {
       return;
     }
 
+    // Filter by branch in JS if needed
+    const filteredOrders = branchId 
+      ? (ordersData || []).filter(o => (o as any).branch_id === branchId)
+      : ordersData || [];
+
     const ordersWithItems = await Promise.all(
-      (ordersData || []).map(async (order) => {
+      filteredOrders.map(async (order) => {
         const { data: items } = await supabase
           .from("order_items")
           .select("*")
@@ -115,8 +124,6 @@ const AdminWaiter = () => {
 
     setOrders(ordersWithItems);
     setIsLoading(false);
-  }, []);
-
   const fetchServiceRequests = useCallback(async () => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
@@ -133,8 +140,13 @@ const AdminWaiter = () => {
       return;
     }
 
-    setServiceRequests(data || []);
-  }, []);
+    // Filter by branch in JS if needed
+    const filteredRequests = branchId 
+      ? (data || []).filter(r => (r as any).branch_id === branchId)
+      : data || [];
+
+    setServiceRequests(filteredRequests);
+  }, [branchId]);
 
   useEffect(() => {
     fetchOrders();
