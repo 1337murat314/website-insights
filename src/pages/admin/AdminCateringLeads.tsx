@@ -159,7 +159,7 @@ export default function AdminCateringLeads() {
   };
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-8">
       {/* Header */}
       <div>
         <h1 className="text-2xl font-bold flex items-center gap-2">
@@ -244,7 +244,8 @@ export default function AdminCateringLeads() {
         </div>
       ) : (
         <Card>
-          <CardContent className="p-0">
+          <CardContent className="p-0 overflow-x-auto">
+            <div className="min-w-[800px]">
             <Table>
               <TableHeader>
                 <TableRow>
@@ -326,6 +327,7 @@ export default function AdminCateringLeads() {
                 )}
               </TableBody>
             </Table>
+            </div>
           </CardContent>
         </Card>
       )}
