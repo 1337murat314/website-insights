@@ -1,7 +1,7 @@
 // Restaurant Information
 export const RESTAURANT_NAME = "Califorian Restaurant";
 export const RESTAURANT_TAGLINE = "Lezzetin Zirvesinde Bir Deneyim";
-export const RESTAURANT_DESCRIPTION = "23 yıldır kalite ve güvenin adresi. Sağlıklı ve lezzetli yemekler ile müşterilerimizin damak zevkine en üst düzeyde hizmet sunuyoruz.";
+export const RESTAURANT_DESCRIPTION = "26 yıldır kalite ve güvenin adresi. Sağlıklı ve lezzetli yemekler ile müşterilerimizin damak zevkine en üst düzeyde hizmet sunuyoruz.";
 export const RESTAURANT_PHONE = "+90 392 444 7070";
 
 // Branches
