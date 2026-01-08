@@ -50,7 +50,7 @@ const StorySection = () => {
                 viewport={{ once: true }}
                 transition={{ duration: 0.5, delay: 0.4 }}
               >
-                <p className="text-5xl md:text-6xl font-display font-bold text-primary">23+</p>
+                <p className="text-5xl md:text-6xl font-display font-bold text-primary">26+</p>
                 <p className="text-muted-foreground text-sm mt-2">
                   {t("Years of Excellence", "Yıllık Mükemmellik")}
                 </p>
@@ -84,8 +84,8 @@ const StorySection = () => {
             <div className="space-y-6 text-muted-foreground text-lg leading-relaxed">
               <p>
                 {t(
-                  "We started serving 23 years ago on Mehmet Akif Street, one of the most popular areas of Lefkoşa. During this time, we have continuously expanded our customer portfolio with our quality service and reliable products.",
-                  "Lefkoşa'nın gözde bölgelerinden biri olan Mehmet Akif Caddesi'nde, tam 23 yıl önce hizmet vermeye başladık. Bu süre zarfında, kaliteli hizmet anlayışımız ve güvenilir ürünlerimizle müşteri portföyümüzü sürekli olarak genişlettik."
+                  "We started serving 26 years ago on Mehmet Akif Street, one of the most popular areas of Lefkoşa. During this time, we have continuously expanded our customer portfolio with our quality service and reliable products.",
+                  "Lefkoşa'nın gözde bölgelerinden biri olan Mehmet Akif Caddesi'nde, tam 26 yıl önce hizmet vermeye başladık. Bu süre zarfında, kaliteli hizmet anlayışımız ve güvenilir ürünlerimizle müşteri portföyümüzü sürekli olarak genişlettik."
                 )}
               </p>
               <p>
