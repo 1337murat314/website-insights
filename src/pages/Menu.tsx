@@ -67,27 +67,9 @@ const Menu = () => {
     }
   };
 
-  // Use database items if available, otherwise use static menu items
-  const displayItems = menuItems.length > 0 ? menuItems : MENU_ITEMS.map((item) => ({
-    id: String(item.id),
-    name: item.name,
-    name_tr: item.nameTr,
-    description: item.description,
-    description_tr: item.descriptionTr,
-    price: item.price,
-    image_url: item.image,
-    category_id: item.category,
-    is_vegetarian: item.tags.includes("vegetarian"),
-    is_vegan: item.tags.includes("vegan"),
-    is_spicy: item.tags.includes("spicy"),
-    is_gluten_free: item.tags.includes("gluten-free"),
-  }));
-
-  const displayCategories = categories.length > 0 ? categories : MENU_CATEGORIES.filter(c => c.id !== "all").map((cat) => ({
-    id: cat.id,
-    name: cat.nameEn,
-    name_tr: cat.nameTr,
-  }));
+  // Always use database items and categories since they're available
+  const displayItems = menuItems;
+  const displayCategories = categories;
 
   const filteredItems = displayItems.filter((item) => {
     const categoryMatch = !activeCategory || item.category_id === activeCategory;
