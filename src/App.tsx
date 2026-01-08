@@ -40,6 +40,8 @@ import AdminKDS from "./pages/admin/AdminKDS";
 import AdminWaiter from "./pages/admin/AdminWaiter";
 import AdminStaffLogins from "./pages/admin/AdminStaffLogins";
 import SuperAdminBranchWrapper from "./pages/admin/SuperAdminBranchWrapper";
+import SuperAdminBranchWaiter from "./pages/admin/SuperAdminBranchWaiter";
+import SuperAdminBranchKitchen from "./pages/admin/SuperAdminBranchKitchen";
 
 // Legacy staff routes (redirects to branch-specific)
 import KitchenLogin from "./pages/KitchenLogin";
@@ -111,8 +113,8 @@ const AnimatedRoutes = () => {
             <Route path="menu" element={<BranchMenu />} />
             <Route path="tables" element={<BranchTables />} />
             <Route path="qr-codes" element={<BranchQRCodes />} />
-            <Route path="kitchen" element={<BranchKitchen />} />
-            <Route path="waiter" element={<BranchWaiter />} />
+            <Route path="kitchen" element={<SuperAdminBranchKitchen />} />
+            <Route path="waiter" element={<SuperAdminBranchWaiter />} />
             <Route path="staff" element={<AdminStaff />} />
           </Route>
         </Route>
