@@ -74,6 +74,93 @@ export type Database = {
         }
         Relationships: []
       }
+      branch_menu_items: {
+        Row: {
+          branch_id: string
+          created_at: string
+          id: string
+          is_available: boolean | null
+          menu_item_id: string
+          price_override: number | null
+          updated_at: string
+        }
+        Insert: {
+          branch_id: string
+          created_at?: string
+          id?: string
+          is_available?: boolean | null
+          menu_item_id: string
+          price_override?: number | null
+          updated_at?: string
+        }
+        Update: {
+          branch_id?: string
+          created_at?: string
+          id?: string
+          is_available?: boolean | null
+          menu_item_id?: string
+          price_override?: number | null
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "branch_menu_items_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "branch_menu_items_menu_item_id_fkey"
+            columns: ["menu_item_id"]
+            isOneToOne: false
+            referencedRelation: "menu_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      branches: {
+        Row: {
+          address: string | null
+          created_at: string
+          hours: string | null
+          id: string
+          is_active: boolean | null
+          map_url: string | null
+          name: string
+          name_tr: string | null
+          phone: string | null
+          sort_order: number | null
+          updated_at: string
+        }
+        Insert: {
+          address?: string | null
+          created_at?: string
+          hours?: string | null
+          id?: string
+          is_active?: boolean | null
+          map_url?: string | null
+          name: string
+          name_tr?: string | null
+          phone?: string | null
+          sort_order?: number | null
+          updated_at?: string
+        }
+        Update: {
+          address?: string | null
+          created_at?: string
+          hours?: string | null
+          id?: string
+          is_active?: boolean | null
+          map_url?: string | null
+          name?: string
+          name_tr?: string | null
+          phone?: string | null
+          sort_order?: number | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       guests: {
         Row: {
           anniversary: string | null
@@ -167,12 +254,54 @@ export type Database = {
         }
         Relationships: []
       }
+      menu_item_sizes: {
+        Row: {
+          created_at: string
+          id: string
+          is_default: boolean | null
+          menu_item_id: string
+          name: string
+          name_tr: string | null
+          price_adjustment: number | null
+          sort_order: number | null
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          is_default?: boolean | null
+          menu_item_id: string
+          name: string
+          name_tr?: string | null
+          price_adjustment?: number | null
+          sort_order?: number | null
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          is_default?: boolean | null
+          menu_item_id?: string
+          name?: string
+          name_tr?: string | null
+          price_adjustment?: number | null
+          sort_order?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "menu_item_sizes_menu_item_id_fkey"
+            columns: ["menu_item_id"]
+            isOneToOne: false
+            referencedRelation: "menu_items"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       menu_items: {
         Row: {
           category_id: string | null
           created_at: string
           description: string | null
           description_tr: string | null
+          has_sizes: boolean | null
           id: string
           image_url: string | null
           is_available: boolean | null
@@ -192,6 +321,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           description_tr?: string | null
+          has_sizes?: boolean | null
           id?: string
           image_url?: string | null
           is_available?: boolean | null
@@ -211,6 +341,7 @@ export type Database = {
           created_at?: string
           description?: string | null
           description_tr?: string | null
+          has_sizes?: boolean | null
           id?: string
           image_url?: string | null
           is_available?: boolean | null
