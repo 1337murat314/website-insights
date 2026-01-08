@@ -512,6 +512,7 @@ const AdminMenu = () => {
           
           {/* Dietary badges */}
           <div className="flex flex-wrap gap-1 mt-1">
+            {item.is_featured && <Badge className="text-[10px] px-1 py-0 h-4 bg-yellow-500 hover:bg-yellow-500 text-white"><Star className="w-2 h-2 mr-0.5 fill-white" />Featured</Badge>}
             {item.has_sizes && <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 border-purple-500 text-purple-500"><Ruler className="w-2 h-2 mr-0.5" />Sizes</Badge>}
             {item.is_vegetarian && <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 border-green-500 text-green-500"><Leaf className="w-2 h-2 mr-0.5" />V</Badge>}
             {item.is_vegan && <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 border-green-600 text-green-600"><Leaf className="w-2 h-2 mr-0.5" />VG</Badge>}
@@ -533,12 +534,12 @@ const AdminMenu = () => {
           </Button>
           <Button
             size="icon"
-            variant="ghost"
-            className="h-6 w-6"
+            variant={item.is_featured ? "default" : "ghost"}
+            className={`h-6 w-6 ${item.is_featured ? "bg-yellow-500 hover:bg-yellow-600 text-white" : ""}`}
             onClick={() => toggleItemFeatured(item)}
-            title={item.is_featured ? "Unfeature" : "Feature"}
+            title={item.is_featured ? "Remove from homepage" : "Show on homepage"}
           >
-            <Star className={`h-3 w-3 ${item.is_featured ? "fill-primary text-primary" : ""}`} />
+            <Star className={`h-3 w-3 ${item.is_featured ? "fill-white" : ""}`} />
           </Button>
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
