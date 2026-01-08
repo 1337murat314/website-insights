@@ -1,3 +1,4 @@
+import { useState } from "react";
 import { motion } from "framer-motion";
 import { Helmet } from "react-helmet";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -16,9 +17,11 @@ import {
 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { Link } from "react-router-dom";
+import CateringQuoteModal from "@/components/catering/CateringQuoteModal";
 
 const Catering = () => {
   const { t } = useLanguage();
+  const [quoteModalOpen, setQuoteModalOpen] = useState(false);
 
   const services = [
     {
@@ -117,8 +120,8 @@ const Catering = () => {
                 )}
               </p>
               <div className="flex flex-col sm:flex-row gap-4 justify-center">
-                <Button size="lg" className="text-lg px-8" asChild>
-                  <a href="#contact">{t("Get a Quote", "Fiyat Teklifi Al")}</a>
+                <Button size="lg" className="text-lg px-8" onClick={() => setQuoteModalOpen(true)}>
+                  {t("Get a Quote", "Fiyat Teklifi Al")}
                 </Button>
                 <Button size="lg" variant="outline" className="text-lg px-8 border-white text-white hover:bg-white hover:text-background" asChild>
                   <a href="#services">{t("Our Services", "Hizmetlerimiz")}</a>
@@ -403,6 +406,8 @@ const Catering = () => {
           </div>
         </section>
       </div>
+
+      <CateringQuoteModal open={quoteModalOpen} onOpenChange={setQuoteModalOpen} />
     </Layout>
   );
 };

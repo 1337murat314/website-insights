@@ -164,6 +164,63 @@ export type Database = {
         }
         Relationships: []
       }
+      catering_products: {
+        Row: {
+          category: string
+          category_tr: string | null
+          created_at: string
+          description: string | null
+          description_tr: string | null
+          id: string
+          is_available: boolean | null
+          max_quantity: number | null
+          min_quantity: number
+          name: string
+          name_tr: string | null
+          price_per_unit: number
+          sort_order: number | null
+          unit: string
+          unit_tr: string | null
+          updated_at: string
+        }
+        Insert: {
+          category: string
+          category_tr?: string | null
+          created_at?: string
+          description?: string | null
+          description_tr?: string | null
+          id?: string
+          is_available?: boolean | null
+          max_quantity?: number | null
+          min_quantity?: number
+          name: string
+          name_tr?: string | null
+          price_per_unit?: number
+          sort_order?: number | null
+          unit?: string
+          unit_tr?: string | null
+          updated_at?: string
+        }
+        Update: {
+          category?: string
+          category_tr?: string | null
+          created_at?: string
+          description?: string | null
+          description_tr?: string | null
+          id?: string
+          is_available?: boolean | null
+          max_quantity?: number | null
+          min_quantity?: number
+          name?: string
+          name_tr?: string | null
+          price_per_unit?: number
+          sort_order?: number | null
+          unit?: string
+          unit_tr?: string | null
+          updated_at?: string
+        }
+        Relationships: []
+      }
       guests: {
         Row: {
           anniversary: string | null

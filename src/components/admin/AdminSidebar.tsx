@@ -69,6 +69,7 @@ const AdminSidebar = () => {
   const mainControlItems = [
     { path: "/admin", label: t("Dashboard", "Kontrol Paneli"), icon: LayoutDashboard, exact: true },
     { path: "/admin/staff-logins", label: t("Staff & Logins", "Personel & Girişler"), icon: KeyRound },
+    { path: "/admin/catering", label: t("Catering", "Catering"), icon: ChefHat },
     { path: "/admin/analytics", label: t("Analytics", "Analitik"), icon: BarChart3 },
     { path: "/admin/audit-logs", label: t("Audit Logs", "Denetim Kayıtları"), icon: ScrollText },
     { path: "/admin/promo-codes", label: t("Promo Codes", "Promosyon Kodları"), icon: Gift },
