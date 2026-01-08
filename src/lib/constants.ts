@@ -13,7 +13,7 @@ export const BRANCHES = [
     address: "Mehmet Akif Caddesi, Lefkoşa",
     addressTr: "Mehmet Akif Caddesi, Lefkoşa",
     phone: "+90 392 444 7070",
-    hours: "09:00 - 00:00",
+    hours: "11:00 - 23:00",
     mapUrl: "https://maps.google.com/?q=Califorian+Lefkosa",
   },
   {
@@ -23,7 +23,7 @@ export const BRANCHES = [
     address: "Gazimağusa",
     addressTr: "Gazimağusa",
     phone: "+90 392 365 61 70",
-    hours: "09:00 - 00:00",
+    hours: "11:00 - 23:00",
     mapUrl: "https://maps.google.com/?q=Califorian+Gazimagusa",
   },
   {
@@ -33,7 +33,7 @@ export const BRANCHES = [
     address: "Esentepe",
     addressTr: "Esentepe",
     phone: "+90 546 999 70 70",
-    hours: "09:00 - 00:00",
+    hours: "11:00 - 23:00",
     mapUrl: "https://maps.google.com/?q=Califorian+Esentepe",
   },
 ];
