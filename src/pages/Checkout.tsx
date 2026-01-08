@@ -18,7 +18,7 @@ type PaymentMethod = "cash_at_table" | "card_at_table";
 const Checkout = () => {
   const { language, t } = useLanguage();
   const navigate = useNavigate();
-  const { items, tableNumber, getSubtotal, getTotal, clearCart } = useCart();
+  const { items, tableNumber, branchId, getSubtotal, getTotal, clearCart } = useCart();
   
   const [isSubmitting, setIsSubmitting] = useState(false);
   
@@ -54,6 +54,7 @@ const Checkout = () => {
           order_type: "dine-in",
           payment_method: formData.paymentMethod,
           table_number: tableNumber,
+          branch_id: branchId || null,
           subtotal: getSubtotal(),
           tax: 0,
           total: getTotal(),

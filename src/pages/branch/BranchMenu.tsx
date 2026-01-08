@@ -7,8 +7,10 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Switch } from "@/components/ui/switch";
 import { Input } from "@/components/ui/input";
+import { Label } from "@/components/ui/label";
 import { Collapsible, CollapsibleContent, CollapsibleTrigger } from "@/components/ui/collapsible";
-import { MapPin, UtensilsCrossed, Search, ChevronDown, ChevronRight, Eye, EyeOff, Loader2, Check, X } from "lucide-react";
+import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
+import { MapPin, UtensilsCrossed, Search, ChevronDown, ChevronRight, Loader2, Check, X, Edit, DollarSign } from "lucide-react";
 import { toast } from "sonner";
 
 interface Category {
@@ -47,6 +49,11 @@ const BranchMenu = () => {
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
   const [expandedCategories, setExpandedCategories] = useState<Set<string>>(new Set());
+  
+  // Price override dialog
+  const [isPriceDialogOpen, setIsPriceDialogOpen] = useState(false);
+  const [editingItem, setEditingItem] = useState<MenuItem | null>(null);
+  const [priceOverride, setPriceOverride] = useState<string>("");
 
   useEffect(() => {
     if (branch) {
@@ -76,9 +83,18 @@ const BranchMenu = () => {
     setIsLoading(false);
   };
 
+  const getBranchItem = (menuItemId: string): BranchMenuItem | undefined => {
+    return branchMenuItems.find((bi) => bi.menu_item_id === menuItemId);
+  };
+
   const getBranchItemStatus = (menuItemId: string): boolean => {
-    const branchItem = branchMenuItems.find((bi) => bi.menu_item_id === menuItemId);
+    const branchItem = getBranchItem(menuItemId);
     return branchItem ? branchItem.is_available : true;
+  };
+
+  const getBranchItemPrice = (item: MenuItem): number => {
+    const branchItem = getBranchItem(item.id);
+    return branchItem?.price_override ?? item.price;
   };
 
   const toggleBranchItemAvailability = async (menuItemId: string) => {
@@ -110,6 +126,54 @@ const BranchMenu = () => {
         toast.success(t("Item disabled for this branch", "Ürün bu şube için devre dışı bırakıldı"));
       }
     }
+  };
+
+  const openPriceDialog = (item: MenuItem) => {
+    setEditingItem(item);
+    const branchItem = getBranchItem(item.id);
+    setPriceOverride(branchItem?.price_override?.toString() || "");
+    setIsPriceDialogOpen(true);
+  };
+
+  const savePriceOverride = async () => {
+    if (!branch || !editingItem) return;
+
+    const newPrice = priceOverride ? parseFloat(priceOverride) : null;
+    const existing = branchMenuItems.find((bi) => bi.menu_item_id === editingItem.id);
+
+    if (existing) {
+      const { error } = await supabase
+        .from("branch_menu_items")
+        .update({ price_override: newPrice })
+        .eq("id", existing.id);
+
+      if (!error) {
+        setBranchMenuItems((prev) =>
+          prev.map((bi) => (bi.id === existing.id ? { ...bi, price_override: newPrice } : bi))
+        );
+        toast.success(t("Price updated", "Fiyat güncellendi"));
+      }
+    } else {
+      const { data, error } = await supabase
+        .from("branch_menu_items")
+        .insert({ 
+          menu_item_id: editingItem.id, 
+          branch_id: branch.id, 
+          is_available: true,
+          price_override: newPrice 
+        })
+        .select()
+        .single();
+
+      if (!error && data) {
+        setBranchMenuItems((prev) => [...prev, data]);
+        toast.success(t("Price set for this branch", "Bu şube için fiyat belirlendi"));
+      }
+    }
+
+    setIsPriceDialogOpen(false);
+    setEditingItem(null);
+    setPriceOverride("");
   };
 
   const groupedItems = useMemo(() => {
@@ -145,7 +209,8 @@ const BranchMenu = () => {
   const stats = useMemo(() => {
     const total = menuItems.length;
     const enabled = menuItems.filter((item) => getBranchItemStatus(item.id)).length;
-    return { total, enabled, disabled: total - enabled };
+    const withPriceOverride = branchMenuItems.filter((bi) => bi.price_override != null).length;
+    return { total, enabled, disabled: total - enabled, withPriceOverride };
   }, [menuItems, branchMenuItems]);
 
   if (isLoading) {
@@ -173,7 +238,7 @@ const BranchMenu = () => {
       </div>
 
       {/* Stats */}
-      <div className="grid grid-cols-3 gap-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card>
           <CardContent className="p-4 text-center">
             <p className="text-2xl font-bold">{stats.total}</p>
@@ -190,6 +255,12 @@ const BranchMenu = () => {
           <CardContent className="p-4 text-center">
             <p className="text-2xl font-bold text-red-600">{stats.disabled}</p>
             <p className="text-sm text-muted-foreground">{t("Disabled", "Devre Dışı")}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4 text-center">
+            <p className="text-2xl font-bold text-blue-600">{stats.withPriceOverride}</p>
+            <p className="text-sm text-muted-foreground">{t("Custom Prices", "Özel Fiyat")}</p>
           </CardContent>
         </Card>
       </div>
@@ -237,6 +308,10 @@ const BranchMenu = () => {
                     <div className="divide-y">
                       {items.map((item) => {
                         const isEnabled = getBranchItemStatus(item.id);
+                        const branchItem = getBranchItem(item.id);
+                        const hasCustomPrice = branchItem?.price_override != null;
+                        const displayPrice = getBranchItemPrice(item);
+
                         return (
                           <div key={item.id} className={`flex items-center justify-between py-3 ${!isEnabled ? "opacity-50" : ""}`}>
                             <div className="flex items-center gap-3">
@@ -245,13 +320,30 @@ const BranchMenu = () => {
                               )}
                               <div>
                                 <p className="font-medium">{language === "tr" && item.name_tr ? item.name_tr : item.name}</p>
-                                <p className="text-sm text-muted-foreground">₺{item.price.toFixed(2)}</p>
+                                <div className="flex items-center gap-2">
+                                  <p className={`text-sm ${hasCustomPrice ? "text-primary font-semibold" : "text-muted-foreground"}`}>
+                                    ₺{displayPrice.toFixed(2)}
+                                  </p>
+                                  {hasCustomPrice && (
+                                    <Badge variant="outline" className="text-xs">
+                                      {t("Custom", "Özel")}
+                                    </Badge>
+                                  )}
+                                  {hasCustomPrice && (
+                                    <span className="text-xs text-muted-foreground line-through">
+                                      ₺{item.price.toFixed(2)}
+                                    </span>
+                                  )}
+                                </div>
                               </div>
                             </div>
-                            <div className="flex items-center gap-3">
+                            <div className="flex items-center gap-2">
+                              <Button variant="ghost" size="icon" onClick={() => openPriceDialog(item)}>
+                                <DollarSign className="h-4 w-4" />
+                              </Button>
                               <Badge variant={isEnabled ? "default" : "secondary"} className="gap-1">
                                 {isEnabled ? <Check className="h-3 w-3" /> : <X className="h-3 w-3" />}
-                                {isEnabled ? t("Enabled", "Aktif") : t("Disabled", "Devre Dışı")}
+                                {isEnabled ? t("On", "Açık") : t("Off", "Kapalı")}
                               </Badge>
                               <Switch checked={isEnabled} onCheckedChange={() => toggleBranchItemAvailability(item.id)} />
                             </div>
@@ -266,6 +358,48 @@ const BranchMenu = () => {
           );
         })}
       </div>
+
+      {/* Price Override Dialog */}
+      <Dialog open={isPriceDialogOpen} onOpenChange={setIsPriceDialogOpen}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{t("Set Branch Price", "Şube Fiyatı Belirle")}</DialogTitle>
+          </DialogHeader>
+          {editingItem && (
+            <div className="space-y-4">
+              <div className="flex items-center gap-3">
+                {editingItem.image_url && (
+                  <img src={editingItem.image_url} alt={editingItem.name} className="w-16 h-16 rounded-lg object-cover" />
+                )}
+                <div>
+                  <p className="font-semibold">{language === "tr" && editingItem.name_tr ? editingItem.name_tr : editingItem.name}</p>
+                  <p className="text-sm text-muted-foreground">
+                    {t("Default price", "Varsayılan fiyat")}: ₺{editingItem.price.toFixed(2)}
+                  </p>
+                </div>
+              </div>
+              <div>
+                <Label>{t("Branch Price (leave empty for default)", "Şube Fiyatı (varsayılan için boş bırakın)")}</Label>
+                <div className="flex items-center gap-2 mt-1">
+                  <span className="text-lg">₺</span>
+                  <Input
+                    type="number"
+                    step="0.01"
+                    min="0"
+                    value={priceOverride}
+                    onChange={(e) => setPriceOverride(e.target.value)}
+                    placeholder={editingItem.price.toFixed(2)}
+                  />
+                </div>
+              </div>
+            </div>
+          )}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setIsPriceDialogOpen(false)}>{t("Cancel", "İptal")}</Button>
+            <Button onClick={savePriceOverride}>{t("Save", "Kaydet")}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 };

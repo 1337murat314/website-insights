@@ -21,7 +21,11 @@ export interface CartItem {
 interface CartContextType {
   items: CartItem[];
   tableNumber: string | null;
+  branchSlug: string | null;
+  branchId: string | null;
   setTableNumber: (table: string | null) => void;
+  setBranchSlug: (slug: string | null) => void;
+  setBranchId: (id: string | null) => void;
   addItem: (item: Omit<CartItem, "id">) => void;
   removeItem: (id: string) => void;
   updateQuantity: (id: string, quantity: number) => void;
@@ -46,6 +50,14 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     return localStorage.getItem("tableNumber");
   });
 
+  const [branchSlug, setBranchSlugState] = useState<string | null>(() => {
+    return localStorage.getItem("branchSlug");
+  });
+
+  const [branchId, setBranchIdState] = useState<string | null>(() => {
+    return localStorage.getItem("branchId");
+  });
+
   useEffect(() => {
     localStorage.setItem("cart", JSON.stringify(items));
   }, [items]);
@@ -58,8 +70,32 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     }
   }, [tableNumber]);
 
+  useEffect(() => {
+    if (branchSlug) {
+      localStorage.setItem("branchSlug", branchSlug);
+    } else {
+      localStorage.removeItem("branchSlug");
+    }
+  }, [branchSlug]);
+
+  useEffect(() => {
+    if (branchId) {
+      localStorage.setItem("branchId", branchId);
+    } else {
+      localStorage.removeItem("branchId");
+    }
+  }, [branchId]);
+
   const setTableNumber = (table: string | null) => {
     setTableNumberState(table);
+  };
+
+  const setBranchSlug = (slug: string | null) => {
+    setBranchSlugState(slug);
+  };
+
+  const setBranchId = (id: string | null) => {
+    setBranchIdState(id);
   };
 
   const addItem = (item: Omit<CartItem, "id">) => {
@@ -84,7 +120,11 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
   const clearCart = () => {
     setItems([]);
     setTableNumberState(null);
+    setBranchSlugState(null);
+    setBranchIdState(null);
     localStorage.removeItem("tableNumber");
+    localStorage.removeItem("branchSlug");
+    localStorage.removeItem("branchId");
   };
 
   const getTotalItems = () => {
@@ -111,7 +151,11 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
       value={{
         items,
         tableNumber,
+        branchSlug,
+        branchId,
         setTableNumber,
+        setBranchSlug,
+        setBranchId,
         addItem,
         removeItem,
         updateQuantity,
