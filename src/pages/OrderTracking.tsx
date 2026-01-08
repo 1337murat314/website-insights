@@ -29,6 +29,7 @@ interface Order {
   total: number;
   created_at: string;
   customer_name: string;
+  branch_id: string | null;
 }
 
 interface OrderItem {
@@ -230,6 +231,7 @@ const OrderTracking = () => {
           table_number: tableNumber,
           request_type: requestType,
           order_id: orders[0]?.id || null,
+          branch_id: orders[0]?.branch_id || null,
         });
 
       if (error) {
