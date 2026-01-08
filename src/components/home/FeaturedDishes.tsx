@@ -35,13 +35,16 @@ const FeaturedDishes = () => {
         .order("sort_order")
         .limit(4);
       
-      if (data && data.length > 0) {
-        setFeaturedItems(data);
-      }
+      setFeaturedItems(data || []);
       setLoading(false);
     };
     fetchFeatured();
   }, []);
+
+  // Don't render section if no featured items and not loading
+  if (!loading && featuredItems.length === 0) {
+    return null;
+  }
 
   return (
     <section className="section-padding bg-background relative overflow-hidden">
