@@ -1,9 +1,9 @@
 import { useState, useEffect, useMemo } from "react";
-import { format, parseISO, isToday, isTomorrow, startOfDay, addDays } from "date-fns";
+import { format, parseISO, isToday, isFuture, isPast } from "date-fns";
 import { useBranch } from "@/contexts/BranchContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { supabase } from "@/integrations/supabase/client";
-import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { Card, CardContent } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -11,11 +11,9 @@ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogFooter } from "@/components/ui/dialog";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
-import { Calendar } from "@/components/ui/calendar";
-import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
-import { MapPin, CalendarDays, Search, Users, Clock, CheckCircle2, XCircle, Loader2, Plus, Calendar as CalendarIcon } from "lucide-react";
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs";
+import { MapPin, CalendarDays, Search, Users, Clock, CheckCircle2, XCircle, Loader2, Plus } from "lucide-react";
 import { toast } from "sonner";
-import { cn } from "@/lib/utils";
 
 interface Reservation {
   id: string;
@@ -46,7 +44,7 @@ const BranchReservations = () => {
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState("all");
   const [searchQuery, setSearchQuery] = useState("");
-  const [selectedDate, setSelectedDate] = useState<Date>(new Date());
+  const [activeTab, setActiveTab] = useState("upcoming");
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [newReservation, setNewReservation] = useState({
     guest_name: "",
@@ -91,18 +89,6 @@ const BranchReservations = () => {
     setLoading(false);
   };
 
-  // If the currently selected date has no reservations, jump to the nearest upcoming one
-  useEffect(() => {
-    if (reservations.length === 0) return;
-
-    const selected = format(selectedDate, "yyyy-MM-dd");
-    const hasForSelected = reservations.some((r) => r.reservation_date === selected);
-    if (hasForSelected) return;
-
-    // reservations are already sorted by date/time in fetchReservations
-    setSelectedDate(parseISO(reservations[0].reservation_date));
-  }, [reservations, selectedDate]);
-
   const updateStatus = async (id: string, newStatus: "pending" | "confirmed" | "cancelled" | "completed" | "no_show") => {
     const { error } = await supabase.from("reservations").update({ status: newStatus }).eq("id", id);
     if (error) {
@@ -139,28 +125,44 @@ const BranchReservations = () => {
     }
   };
 
+  const getTabReservations = useMemo(() => {
+    const today = format(new Date(), "yyyy-MM-dd");
+    
+    switch (activeTab) {
+      case "today":
+        return reservations.filter((r) => r.reservation_date === today);
+      case "upcoming":
+        return reservations.filter((r) => r.reservation_date >= today);
+      case "past":
+        return reservations.filter((r) => r.reservation_date < today);
+      case "all":
+      default:
+        return reservations;
+    }
+  }, [reservations, activeTab]);
+
   const filteredReservations = useMemo(() => {
-    const dateStr = format(selectedDate, "yyyy-MM-dd");
-    return reservations.filter((r) => {
-      const dateMatch = r.reservation_date === dateStr;
+    return getTabReservations.filter((r) => {
       const statusMatch = statusFilter === "all" || r.status === statusFilter;
       const searchMatch = !searchQuery || 
         r.guest_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        r.guest_email.toLowerCase().includes(searchQuery.toLowerCase());
-      return dateMatch && statusMatch && searchMatch;
+        (r.guest_phone && r.guest_phone.includes(searchQuery));
+      return statusMatch && searchMatch;
     });
-  }, [reservations, selectedDate, statusFilter, searchQuery]);
+  }, [getTabReservations, statusFilter, searchQuery]);
 
   const stats = useMemo(() => {
-    const dateStr = format(selectedDate, "yyyy-MM-dd");
-    const dayReservations = reservations.filter((r) => r.reservation_date === dateStr);
+    const today = format(new Date(), "yyyy-MM-dd");
+    const todayReservations = reservations.filter((r) => r.reservation_date === today);
+    const upcomingReservations = reservations.filter((r) => r.reservation_date >= today);
+    
     return {
-      total: dayReservations.length,
-      confirmed: dayReservations.filter((r) => r.status === "confirmed").length,
-      pending: dayReservations.filter((r) => r.status === "pending").length,
-      totalGuests: dayReservations.filter((r) => r.status !== "cancelled").reduce((sum, r) => sum + r.party_size, 0),
+      total: reservations.length,
+      today: todayReservations.length,
+      upcoming: upcomingReservations.length,
+      pending: reservations.filter((r) => r.status === "pending").length,
     };
-  }, [reservations, selectedDate]);
+  }, [reservations]);
 
   if (loading) {
     return (
@@ -192,23 +194,8 @@ const BranchReservations = () => {
         </Button>
       </div>
 
-      {/* Date Selector & Stats */}
-      <div className="grid gap-4 md:grid-cols-5">
-        <Card className="md:col-span-1">
-          <CardContent className="p-4">
-            <Popover>
-              <PopoverTrigger asChild>
-                <Button variant="outline" className="w-full justify-start text-left">
-                  <CalendarIcon className="h-4 w-4 mr-2" />
-                  {format(selectedDate, "MMM d, yyyy")}
-                </Button>
-              </PopoverTrigger>
-              <PopoverContent className="w-auto p-0">
-                <Calendar mode="single" selected={selectedDate} onSelect={(d) => d && setSelectedDate(d)} />
-              </PopoverContent>
-            </Popover>
-          </CardContent>
-        </Card>
+      {/* Stats */}
+      <div className="grid gap-4 grid-cols-2 md:grid-cols-4">
         <Card>
           <CardContent className="p-4 text-center">
             <p className="text-2xl font-bold">{stats.total}</p>
@@ -217,8 +204,14 @@ const BranchReservations = () => {
         </Card>
         <Card>
           <CardContent className="p-4 text-center">
-            <p className="text-2xl font-bold text-green-600">{stats.confirmed}</p>
-            <p className="text-sm text-muted-foreground">{t("Confirmed", "Onaylı")}</p>
+            <p className="text-2xl font-bold text-blue-600">{stats.today}</p>
+            <p className="text-sm text-muted-foreground">{t("Today", "Bugün")}</p>
+          </CardContent>
+        </Card>
+        <Card>
+          <CardContent className="p-4 text-center">
+            <p className="text-2xl font-bold text-green-600">{stats.upcoming}</p>
+            <p className="text-sm text-muted-foreground">{t("Upcoming", "Yaklaşan")}</p>
           </CardContent>
         </Card>
         <Card>
@@ -227,19 +220,23 @@ const BranchReservations = () => {
             <p className="text-sm text-muted-foreground">{t("Pending", "Bekliyor")}</p>
           </CardContent>
         </Card>
-        <Card>
-          <CardContent className="p-4 text-center">
-            <p className="text-2xl font-bold">{stats.totalGuests}</p>
-            <p className="text-sm text-muted-foreground">{t("Guests", "Misafir")}</p>
-          </CardContent>
-        </Card>
       </div>
+
+      {/* Tabs */}
+      <Tabs value={activeTab} onValueChange={setActiveTab}>
+        <TabsList>
+          <TabsTrigger value="today">{t("Today", "Bugün")} ({stats.today})</TabsTrigger>
+          <TabsTrigger value="upcoming">{t("Upcoming", "Yaklaşan")} ({stats.upcoming})</TabsTrigger>
+          <TabsTrigger value="past">{t("Past", "Geçmiş")}</TabsTrigger>
+          <TabsTrigger value="all">{t("All", "Tümü")} ({stats.total})</TabsTrigger>
+        </TabsList>
+      </Tabs>
 
       {/* Filters */}
       <div className="flex flex-wrap gap-3">
         <div className="relative flex-1 min-w-[200px]">
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-          <Input placeholder={t("Search...", "Ara...")} value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-9" />
+          <Input placeholder={t("Search name or phone...", "Ad veya telefon ara...")} value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-9" />
         </div>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
           <SelectTrigger className="w-[180px]"><SelectValue /></SelectTrigger>
@@ -259,24 +256,34 @@ const BranchReservations = () => {
           return (
             <Card key={reservation.id}>
               <CardContent className="p-4">
-                <div className="flex items-center justify-between">
+                <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3">
                   <div className="space-y-1">
-                    <div className="flex items-center gap-3">
+                    <div className="flex items-center gap-3 flex-wrap">
                       <p className="font-semibold">{reservation.guest_name}</p>
                       <Badge className={`${config.color} text-white`}>
                         {language === "tr" ? config.labelTr : config.label}
                       </Badge>
                     </div>
-                    <div className="flex items-center gap-4 text-sm text-muted-foreground">
-                      <span className="flex items-center gap-1"><Clock className="h-3 w-3" />{reservation.reservation_time}</span>
-                      <span className="flex items-center gap-1"><Users className="h-3 w-3" />{reservation.party_size} {t("guests", "kişi")}</span>
-                      <span>{reservation.guest_email}</span>
+                    <div className="flex items-center gap-4 text-sm text-muted-foreground flex-wrap">
+                      <span className="flex items-center gap-1">
+                        <CalendarDays className="h-3 w-3" />
+                        {reservation.reservation_date}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Clock className="h-3 w-3" />
+                        {reservation.reservation_time}
+                      </span>
+                      <span className="flex items-center gap-1">
+                        <Users className="h-3 w-3" />
+                        {reservation.party_size} {t("guests", "kişi")}
+                      </span>
+                      {reservation.guest_phone && <span>{reservation.guest_phone}</span>}
                     </div>
                     {reservation.special_requests && (
                       <p className="text-sm text-muted-foreground italic">"{reservation.special_requests}"</p>
                     )}
                   </div>
-                  <div className="flex gap-2">
+                  <div className="flex gap-2 flex-shrink-0">
                     {reservation.status === "pending" && (
                       <>
                         <Button size="sm" variant="outline" onClick={() => updateStatus(reservation.id, "confirmed")}>
@@ -301,7 +308,7 @@ const BranchReservations = () => {
         {filteredReservations.length === 0 && (
           <div className="text-center py-12 text-muted-foreground">
             <CalendarDays className="h-12 w-12 mx-auto mb-4 opacity-50" />
-            <p>{t("No reservations for this date", "Bu tarih için rezervasyon yok")}</p>
+            <p>{t("No reservations found", "Rezervasyon bulunamadı")}</p>
           </div>
         )}
       </div>
