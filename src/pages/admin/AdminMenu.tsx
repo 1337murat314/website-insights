@@ -16,7 +16,8 @@ import { useToast } from "@/hooks/use-toast";
 import { 
   Plus, Edit, Trash2, UtensilsCrossed, Leaf, Wheat, Flame, Image, 
   Search, ChevronDown, ChevronRight, Eye, EyeOff, Star, GripVertical,
-  ArrowUp, ArrowDown, Copy, MoreVertical, RefreshCw, Filter, Package
+  ArrowUp, ArrowDown, Copy, MoreVertical, RefreshCw, Filter, Package,
+  Ruler, MapPin, Check, X
 } from "lucide-react";
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuSeparator, DropdownMenuTrigger } from "@/components/ui/dropdown-menu";
 import ImageUpload from "@/components/admin/ImageUpload";
@@ -47,6 +48,32 @@ interface MenuItem {
   is_featured: boolean;
   is_available: boolean;
   sort_order: number;
+  has_sizes?: boolean;
+}
+
+interface MenuItemSize {
+  id: string;
+  menu_item_id: string;
+  name: string;
+  name_tr: string | null;
+  price_adjustment: number;
+  is_default: boolean;
+  sort_order: number;
+}
+
+interface Branch {
+  id: string;
+  name: string;
+  name_tr: string | null;
+  is_active: boolean;
+}
+
+interface BranchMenuItem {
+  id: string;
+  branch_id: string;
+  menu_item_id: string;
+  is_available: boolean;
+  price_override: number | null;
 }
 
 const defaultMenuItem: Partial<MenuItem> = {
@@ -64,6 +91,7 @@ const defaultMenuItem: Partial<MenuItem> = {
   is_available: true,
   sort_order: 0,
   category_id: null,
+  has_sizes: false,
 };
 
 const defaultCategory: Partial<Category> = {
@@ -78,11 +106,18 @@ const defaultCategory: Partial<Category> = {
 const AdminMenu = () => {
   const [categories, setCategories] = useState<Category[]>([]);
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
+  const [branches, setBranches] = useState<Branch[]>([]);
+  const [branchMenuItems, setBranchMenuItems] = useState<BranchMenuItem[]>([]);
+  const [itemSizes, setItemSizes] = useState<MenuItemSize[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isItemDialogOpen, setIsItemDialogOpen] = useState(false);
   const [isCategoryDialogOpen, setIsCategoryDialogOpen] = useState(false);
+  const [isSizesDialogOpen, setIsSizesDialogOpen] = useState(false);
   const [editingItem, setEditingItem] = useState<Partial<MenuItem>>(defaultMenuItem);
   const [editingCategory, setEditingCategory] = useState<Partial<Category>>(defaultCategory);
+  const [editingSizes, setEditingSizes] = useState<MenuItemSize[]>([]);
+  const [sizesItemId, setSizesItemId] = useState<string | null>(null);
+  const [selectedBranch, setSelectedBranch] = useState<string | null>(null);
   const [isEditing, setIsEditing] = useState(false);
   const [searchQuery, setSearchQuery] = useState("");
   const [filterAvailable, setFilterAvailable] = useState<"all" | "available" | "unavailable">("all");
@@ -104,14 +139,114 @@ const AdminMenu = () => {
 
   const fetchData = async () => {
     setIsLoading(true);
-    const [categoriesRes, itemsRes] = await Promise.all([
+    const [categoriesRes, itemsRes, branchesRes, branchItemsRes, sizesRes] = await Promise.all([
       supabase.from("menu_categories").select("*").order("sort_order"),
       supabase.from("menu_items").select("*").order("sort_order"),
+      supabase.from("branches").select("*").order("sort_order"),
+      supabase.from("branch_menu_items").select("*"),
+      supabase.from("menu_item_sizes").select("*").order("sort_order"),
     ]);
 
     if (categoriesRes.data) setCategories(categoriesRes.data);
     if (itemsRes.data) setMenuItems(itemsRes.data);
+    if (branchesRes.data) {
+      setBranches(branchesRes.data);
+      if (!selectedBranch && branchesRes.data.length > 0) {
+        setSelectedBranch(branchesRes.data[0].id);
+      }
+    }
+    if (branchItemsRes.data) setBranchMenuItems(branchItemsRes.data);
+    if (sizesRes.data) setItemSizes(sizesRes.data);
     setIsLoading(false);
+  };
+
+  // Size management functions
+  const openSizesDialog = (itemId: string) => {
+    const sizes = itemSizes.filter(s => s.menu_item_id === itemId);
+    setEditingSizes(sizes.length > 0 ? sizes : [
+      { id: '', menu_item_id: itemId, name: 'Small', name_tr: 'Küçük', price_adjustment: 0, is_default: true, sort_order: 0 },
+      { id: '', menu_item_id: itemId, name: 'Medium', name_tr: 'Orta', price_adjustment: 50, is_default: false, sort_order: 1 },
+      { id: '', menu_item_id: itemId, name: 'Large', name_tr: 'Büyük', price_adjustment: 100, is_default: false, sort_order: 2 },
+    ]);
+    setSizesItemId(itemId);
+    setIsSizesDialogOpen(true);
+  };
+
+  const saveSizes = async () => {
+    if (!sizesItemId) return;
+    
+    // Delete existing sizes for this item
+    await supabase.from("menu_item_sizes").delete().eq("menu_item_id", sizesItemId);
+    
+    // Insert new sizes
+    const sizesToInsert = editingSizes.map((s, idx) => ({
+      menu_item_id: sizesItemId,
+      name: s.name,
+      name_tr: s.name_tr,
+      price_adjustment: s.price_adjustment,
+      is_default: s.is_default,
+      sort_order: idx,
+    }));
+    
+    const { error: sizesError } = await supabase.from("menu_item_sizes").insert(sizesToInsert);
+    
+    // Update the menu item to have has_sizes = true
+    const { error: itemError } = await supabase.from("menu_items").update({ has_sizes: true }).eq("id", sizesItemId);
+    
+    if (sizesError || itemError) {
+      toast({ title: "Error", description: "Failed to save sizes", variant: "destructive" });
+    } else {
+      toast({ title: "Success", description: "Sizes saved successfully" });
+      setIsSizesDialogOpen(false);
+      fetchData();
+    }
+  };
+
+  const removeSizes = async () => {
+    if (!sizesItemId) return;
+    
+    await supabase.from("menu_item_sizes").delete().eq("menu_item_id", sizesItemId);
+    await supabase.from("menu_items").update({ has_sizes: false }).eq("id", sizesItemId);
+    
+    toast({ title: "Sizes removed", description: "Item no longer has size options" });
+    setIsSizesDialogOpen(false);
+    fetchData();
+  };
+
+  // Branch menu functions
+  const getBranchItemStatus = (menuItemId: string, branchId: string): boolean => {
+    const branchItem = branchMenuItems.find(bi => bi.menu_item_id === menuItemId && bi.branch_id === branchId);
+    // If no branch item exists, item is available by default
+    return branchItem ? branchItem.is_available : true;
+  };
+
+  const toggleBranchItemAvailability = async (menuItemId: string, branchId: string) => {
+    const existing = branchMenuItems.find(bi => bi.menu_item_id === menuItemId && bi.branch_id === branchId);
+    
+    if (existing) {
+      // Update existing
+      const { error } = await supabase
+        .from("branch_menu_items")
+        .update({ is_available: !existing.is_available })
+        .eq("id", existing.id);
+      
+      if (!error) {
+        setBranchMenuItems(prev => prev.map(bi => 
+          bi.id === existing.id ? { ...bi, is_available: !bi.is_available } : bi
+        ));
+      }
+    } else {
+      // Create new (disabled)
+      const { data, error } = await supabase
+        .from("branch_menu_items")
+        .insert({ menu_item_id: menuItemId, branch_id: branchId, is_available: false })
+        .select()
+        .single();
+      
+      if (!error && data) {
+        setBranchMenuItems(prev => [...prev, data]);
+      }
+    }
   };
 
   // Grouped items by category
@@ -377,6 +512,7 @@ const AdminMenu = () => {
           
           {/* Dietary badges */}
           <div className="flex flex-wrap gap-1 mt-1">
+            {item.has_sizes && <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 border-purple-500 text-purple-500"><Ruler className="w-2 h-2 mr-0.5" />Sizes</Badge>}
             {item.is_vegetarian && <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 border-green-500 text-green-500"><Leaf className="w-2 h-2 mr-0.5" />V</Badge>}
             {item.is_vegan && <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 border-green-600 text-green-600"><Leaf className="w-2 h-2 mr-0.5" />VG</Badge>}
             {item.is_gluten_free && <Badge variant="outline" className="text-[10px] px-1 py-0 h-4 border-amber-500 text-amber-500"><Wheat className="w-2 h-2 mr-0.5" />GF</Badge>}
@@ -416,6 +552,9 @@ const AdminMenu = () => {
               </DropdownMenuItem>
               <DropdownMenuItem onClick={() => duplicateItem(item)}>
                 <Copy className="h-3 w-3 mr-2" /> Duplicate
+              </DropdownMenuItem>
+              <DropdownMenuItem onClick={() => openSizesDialog(item.id)}>
+                <Ruler className="h-3 w-3 mr-2" /> {item.has_sizes ? "Edit Sizes" : "Add Sizes"}
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem onClick={() => moveItem(item, "up")}>
@@ -479,9 +618,10 @@ const AdminMenu = () => {
 
       {/* Tabs */}
       <Tabs value={activeTab} onValueChange={setActiveTab}>
-        <TabsList className="grid w-full max-w-md grid-cols-2">
+        <TabsList className="grid w-full max-w-xl grid-cols-3">
           <TabsTrigger value="organized">By Category</TabsTrigger>
-          <TabsTrigger value="categories">Manage Categories</TabsTrigger>
+          <TabsTrigger value="branches">Branch Menus</TabsTrigger>
+          <TabsTrigger value="categories">Categories</TabsTrigger>
         </TabsList>
 
         {/* Organized by Category Tab */}
@@ -693,6 +833,81 @@ const AdminMenu = () => {
             ))}
           </div>
         </TabsContent>
+
+        {/* Branch Menus Tab */}
+        <TabsContent value="branches" className="space-y-4 mt-4">
+          <div className="flex flex-wrap gap-2 items-center justify-between">
+            <div className="flex gap-2">
+              {branches.map(branch => (
+                <Button
+                  key={branch.id}
+                  variant={selectedBranch === branch.id ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setSelectedBranch(branch.id)}
+                >
+                  <MapPin className="h-3 w-3 mr-1" />
+                  {branch.name}
+                </Button>
+              ))}
+            </div>
+            <p className="text-sm text-muted-foreground">
+              Toggle items on/off for {branches.find(b => b.id === selectedBranch)?.name || "selected branch"}
+            </p>
+          </div>
+
+          {selectedBranch && (
+            <div className="space-y-3">
+              {categories.filter(c => c.is_active).map(category => {
+                const items = menuItems.filter(i => i.category_id === category.id && i.is_available);
+                if (items.length === 0) return null;
+                
+                return (
+                  <Card key={category.id}>
+                    <CardHeader className="py-3">
+                      <CardTitle className="text-sm font-medium flex items-center gap-2">
+                        {category.name}
+                        <Badge variant="secondary" className="text-xs">{items.length} items</Badge>
+                      </CardTitle>
+                    </CardHeader>
+                    <CardContent className="pt-0">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-2">
+                        {items.map(item => {
+                          const isEnabled = getBranchItemStatus(item.id, selectedBranch);
+                          return (
+                            <div
+                              key={item.id}
+                              className={`flex items-center justify-between p-2 rounded-lg border transition-all ${
+                                isEnabled ? "bg-green-500/10 border-green-500/30" : "bg-muted/50 border-border opacity-60"
+                              }`}
+                            >
+                              <div className="flex items-center gap-2 min-w-0">
+                                {item.image_url && (
+                                  <img src={item.image_url} alt="" className="w-8 h-8 rounded object-cover" />
+                                )}
+                                <div className="min-w-0">
+                                  <p className="text-sm font-medium truncate">{item.name}</p>
+                                  <p className="text-xs text-muted-foreground">₺{item.price}</p>
+                                </div>
+                              </div>
+                              <Button
+                                size="icon"
+                                variant={isEnabled ? "default" : "outline"}
+                                className="h-7 w-7 shrink-0"
+                                onClick={() => toggleBranchItemAvailability(item.id, selectedBranch)}
+                              >
+                                {isEnabled ? <Check className="h-3 w-3" /> : <X className="h-3 w-3" />}
+                              </Button>
+                            </div>
+                          );
+                        })}
+                      </div>
+                    </CardContent>
+                  </Card>
+                );
+              })}
+            </div>
+          )}
+        </TabsContent>
       </Tabs>
 
       {/* Menu Item Dialog */}
@@ -819,6 +1034,97 @@ const AdminMenu = () => {
           <DialogFooter>
             <Button variant="outline" onClick={() => setIsCategoryDialogOpen(false)}>Cancel</Button>
             <Button onClick={saveCategory} disabled={!editingCategory.name}>{isEditing ? "Update" : "Create"}</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      {/* Sizes Dialog */}
+      <Dialog open={isSizesDialogOpen} onOpenChange={setIsSizesDialogOpen}>
+        <DialogContent className="max-w-lg">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2">
+              <Ruler className="h-5 w-5" />
+              Manage Sizes
+            </DialogTitle>
+            <DialogDescription>
+              Add size options with price adjustments. The base price is the item's default price.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="space-y-3">
+            {editingSizes.map((size, index) => (
+              <div key={index} className="flex gap-2 items-center">
+                <div className="flex-1 grid grid-cols-3 gap-2">
+                  <Input
+                    placeholder="Size name"
+                    value={size.name}
+                    onChange={(e) => {
+                      const newSizes = [...editingSizes];
+                      newSizes[index].name = e.target.value;
+                      setEditingSizes(newSizes);
+                    }}
+                  />
+                  <Input
+                    placeholder="Turkish"
+                    value={size.name_tr || ""}
+                    onChange={(e) => {
+                      const newSizes = [...editingSizes];
+                      newSizes[index].name_tr = e.target.value;
+                      setEditingSizes(newSizes);
+                    }}
+                  />
+                  <div className="relative">
+                    <span className="absolute left-2 top-1/2 -translate-y-1/2 text-muted-foreground text-sm">+₺</span>
+                    <Input
+                      type="number"
+                      placeholder="0"
+                      value={size.price_adjustment}
+                      onChange={(e) => {
+                        const newSizes = [...editingSizes];
+                        newSizes[index].price_adjustment = parseFloat(e.target.value) || 0;
+                        setEditingSizes(newSizes);
+                      }}
+                      className="pl-8"
+                    />
+                  </div>
+                </div>
+                <Button
+                  size="icon"
+                  variant="ghost"
+                  className="shrink-0"
+                  onClick={() => {
+                    setEditingSizes(editingSizes.filter((_, i) => i !== index));
+                  }}
+                >
+                  <Trash2 className="h-4 w-4 text-destructive" />
+                </Button>
+              </div>
+            ))}
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setEditingSizes([...editingSizes, {
+                id: '',
+                menu_item_id: sizesItemId || '',
+                name: '',
+                name_tr: '',
+                price_adjustment: 0,
+                is_default: false,
+                sort_order: editingSizes.length,
+              }])}
+            >
+              <Plus className="h-4 w-4 mr-1" /> Add Size
+            </Button>
+          </div>
+          <DialogFooter className="flex justify-between sm:justify-between">
+            <Button variant="destructive" size="sm" onClick={removeSizes}>
+              Remove All Sizes
+            </Button>
+            <div className="flex gap-2">
+              <Button variant="outline" onClick={() => setIsSizesDialogOpen(false)}>Cancel</Button>
+              <Button onClick={saveSizes} disabled={editingSizes.length === 0 || editingSizes.some(s => !s.name)}>
+                Save Sizes
+              </Button>
+            </div>
           </DialogFooter>
         </DialogContent>
       </Dialog>
