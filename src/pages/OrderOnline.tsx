@@ -1,7 +1,7 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
 import { motion } from "framer-motion";
-import { Flame, Leaf, Wheat, Search, UtensilsCrossed } from "lucide-react";
+import { Flame, Leaf, Wheat, Search, UtensilsCrossed, MapPin } from "lucide-react";
 import Layout from "@/components/layout/Layout";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useCart } from "@/contexts/CartContext";
@@ -34,12 +34,27 @@ interface Category {
   name_tr: string | null;
 }
 
+interface Branch {
+  id: string;
+  name: string;
+  name_tr: string | null;
+  slug: string | null;
+}
+
+interface BranchMenuItem {
+  menu_item_id: string;
+  is_available: boolean;
+  price_override: number | null;
+}
+
 const OrderOnline = () => {
   const { language, t } = useLanguage();
-  const { tableNumber, setTableNumber } = useCart();
+  const { tableNumber, setTableNumber, branchSlug, setBranchSlug, setBranchId } = useCart();
   const [searchParams] = useSearchParams();
   const [menuItems, setMenuItems] = useState<MenuItem[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
+  const [branch, setBranch] = useState<Branch | null>(null);
+  const [branchMenuItems, setBranchMenuItems] = useState<BranchMenuItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [searchQuery, setSearchQuery] = useState("");
@@ -47,27 +62,62 @@ const OrderOnline = () => {
   const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
 
-  // Get table number from URL params
+  // Get table number and branch from URL params
   useEffect(() => {
     const table = searchParams.get("table");
+    const branchParam = searchParams.get("branch");
+    
     if (table) {
       setTableNumber(table);
     }
-  }, [searchParams, setTableNumber]);
+    if (branchParam) {
+      setBranchSlug(branchParam);
+    }
+  }, [searchParams, setTableNumber, setBranchSlug]);
 
   useEffect(() => {
     fetchData();
-  }, []);
+  }, [branchSlug]);
 
   const fetchData = async () => {
     try {
+      setLoading(true);
+      
+      // Fetch branch if we have a slug
+      let branchData: Branch | null = null;
+      if (branchSlug) {
+        const { data } = await supabase
+          .from("branches")
+          .select("id, name, name_tr, slug")
+          .eq("slug", branchSlug)
+          .eq("is_active", true)
+          .single();
+        branchData = data;
+        setBranch(data);
+        if (data) {
+          setBranchId(data.id);
+        }
+      }
+
+      // Fetch menu items and categories
       const [itemsRes, categoriesRes] = await Promise.all([
         supabase.from("menu_items").select("*").eq("is_available", true).order("sort_order"),
         supabase.from("menu_categories").select("*").eq("is_active", true).order("sort_order"),
       ]);
 
-      if (itemsRes.data) setMenuItems(itemsRes.data);
       if (categoriesRes.data) setCategories(categoriesRes.data);
+
+      // If we have a branch, fetch branch-specific menu items
+      if (branchData) {
+        const { data: branchItems } = await supabase
+          .from("branch_menu_items")
+          .select("menu_item_id, is_available, price_override")
+          .eq("branch_id", branchData.id);
+        
+        setBranchMenuItems(branchItems || []);
+      }
+
+      if (itemsRes.data) setMenuItems(itemsRes.data);
     } catch (error) {
       console.error("Error fetching menu:", error);
     } finally {
@@ -75,7 +125,34 @@ const OrderOnline = () => {
     }
   };
 
-  const filteredItems = menuItems.filter((item) => {
+  // Filter items based on branch availability
+  const availableItems = useMemo(() => {
+    if (!branch || branchMenuItems.length === 0) {
+      // No branch context - show all items
+      return menuItems;
+    }
+
+    // Filter items based on branch_menu_items settings
+    return menuItems.filter((item) => {
+      const branchItem = branchMenuItems.find((bi) => bi.menu_item_id === item.id);
+      // If no branch override exists, item is available by default
+      // If override exists, check is_available flag
+      return branchItem ? branchItem.is_available : true;
+    });
+  }, [menuItems, branch, branchMenuItems]);
+
+  // Get effective price (with branch override if applicable)
+  const getItemPrice = (item: MenuItem): number => {
+    if (branch && branchMenuItems.length > 0) {
+      const branchItem = branchMenuItems.find((bi) => bi.menu_item_id === item.id);
+      if (branchItem?.price_override != null) {
+        return branchItem.price_override;
+      }
+    }
+    return item.price;
+  };
+
+  const filteredItems = availableItems.filter((item) => {
     const categoryMatch = !activeCategory || item.category_id === activeCategory;
     const searchMatch =
       !searchQuery ||
@@ -114,19 +191,33 @@ const OrderOnline = () => {
           />
         </div>
         <div className="container mx-auto container-padding relative text-center text-cream">
-          {/* Table Number Badge */}
-          {tableNumber && (
-            <motion.div
-              initial={{ opacity: 0, scale: 0.9 }}
-              animate={{ opacity: 1, scale: 1 }}
-              className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-6 py-3 rounded-full mb-6"
-            >
-              <UtensilsCrossed className="w-5 h-5" />
-              <span className="font-bold text-lg">
-                {t("Table", "Masa")} {tableNumber}
-              </span>
-            </motion.div>
-          )}
+          {/* Branch & Table Badge */}
+          <div className="flex flex-wrap justify-center gap-3 mb-6">
+            {branch && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="inline-flex items-center gap-2 bg-secondary text-secondary-foreground px-6 py-3 rounded-full"
+              >
+                <MapPin className="w-5 h-5" />
+                <span className="font-bold text-lg">
+                  {language === "tr" && branch.name_tr ? branch.name_tr : branch.name}
+                </span>
+              </motion.div>
+            )}
+            {tableNumber && (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.9 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="inline-flex items-center gap-2 bg-primary text-primary-foreground px-6 py-3 rounded-full"
+              >
+                <UtensilsCrossed className="w-5 h-5" />
+                <span className="font-bold text-lg">
+                  {t("Table", "Masa")} {tableNumber}
+                </span>
+              </motion.div>
+            )}
+          </div>
           <motion.p
             initial={{ opacity: 0, y: 20 }}
             animate={{ opacity: 1, y: 0 }}
@@ -256,58 +347,61 @@ const OrderOnline = () => {
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
-              {filteredItems.map((item, index) => (
-                <motion.div
-                  key={item.id}
-                  initial={{ opacity: 0, y: 20 }}
-                  animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.05 }}
-                  onClick={() => handleItemClick(item)}
-                  className="group bg-card rounded-2xl overflow-hidden shadow-lg hover-lift cursor-pointer"
-                >
-                  {/* Image */}
-                  <div className="relative h-56 overflow-hidden">
-                    <img
-                      src={item.image_url || "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400"}
-                      alt={language === "en" ? item.name : item.name_tr || item.name}
-                      className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
-                      loading="lazy"
-                    />
-                    <div className="absolute top-4 right-4 flex flex-wrap gap-2">
-                      {item.is_vegetarian && (
-                        <Badge variant="secondary" className="bg-green-500/90 text-white">
-                          <Leaf className="w-3 h-3 mr-1" />
-                          {t("Veg", "Vej")}
-                        </Badge>
-                      )}
-                      {item.is_spicy && (
-                        <Badge variant="secondary" className="bg-red-500/90 text-white">
-                          <Flame className="w-3 h-3 mr-1" />
-                          {t("Spicy", "Acı")}
-                        </Badge>
-                      )}
+              {filteredItems.map((item, index) => {
+                const effectivePrice = getItemPrice(item);
+                return (
+                  <motion.div
+                    key={item.id}
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: index * 0.05 }}
+                    onClick={() => handleItemClick(item)}
+                    className="group bg-card rounded-2xl overflow-hidden shadow-lg hover-lift cursor-pointer"
+                  >
+                    {/* Image */}
+                    <div className="relative h-56 overflow-hidden">
+                      <img
+                        src={item.image_url || "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400"}
+                        alt={language === "en" ? item.name : item.name_tr || item.name}
+                        className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
+                        loading="lazy"
+                      />
+                      <div className="absolute top-4 right-4 flex flex-wrap gap-2">
+                        {item.is_vegetarian && (
+                          <Badge variant="secondary" className="bg-green-500/90 text-white">
+                            <Leaf className="w-3 h-3 mr-1" />
+                            {t("Veg", "Vej")}
+                          </Badge>
+                        )}
+                        {item.is_spicy && (
+                          <Badge variant="secondary" className="bg-red-500/90 text-white">
+                            <Flame className="w-3 h-3 mr-1" />
+                            {t("Spicy", "Acı")}
+                          </Badge>
+                        )}
+                      </div>
+                      <div className="absolute inset-0 bg-gradient-to-t from-card/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-4">
+                        <span className="text-primary-foreground font-medium">
+                          {t("Click to add to cart", "Sepete eklemek için tıkla")}
+                        </span>
+                      </div>
                     </div>
-                    <div className="absolute inset-0 bg-gradient-to-t from-card/80 to-transparent opacity-0 group-hover:opacity-100 transition-opacity flex items-end p-4">
-                      <span className="text-primary-foreground font-medium">
-                        {t("Click to add to cart", "Sepete eklemek için tıkla")}
-                      </span>
-                    </div>
-                  </div>
 
-                  {/* Content */}
-                  <div className="p-6">
-                    <div className="flex justify-between items-start mb-3">
-                      <h3 className="font-serif text-xl font-semibold text-foreground">
-                        {language === "en" ? item.name : item.name_tr || item.name}
-                      </h3>
-                      <span className="text-primary font-bold text-xl">₺{item.price}</span>
+                    {/* Content */}
+                    <div className="p-6">
+                      <div className="flex justify-between items-start mb-3">
+                        <h3 className="font-serif text-xl font-semibold text-foreground">
+                          {language === "en" ? item.name : item.name_tr || item.name}
+                        </h3>
+                        <span className="text-primary font-bold text-xl">₺{effectivePrice}</span>
+                      </div>
+                      <p className="text-muted-foreground text-sm leading-relaxed line-clamp-2">
+                        {language === "en" ? item.description : item.description_tr || item.description}
+                      </p>
                     </div>
-                    <p className="text-muted-foreground text-sm leading-relaxed line-clamp-2">
-                      {language === "en" ? item.description : item.description_tr || item.description}
-                    </p>
-                  </div>
-                </motion.div>
-              ))}
+                  </motion.div>
+                );
+              })}
             </div>
           )}
 
@@ -332,7 +426,7 @@ const OrderOnline = () => {
           nameTr: selectedItem.name_tr || undefined,
           description: selectedItem.description || undefined,
           descriptionTr: selectedItem.description_tr || undefined,
-          price: selectedItem.price,
+          price: getItemPrice(selectedItem),
           image: selectedItem.image_url || undefined,
           isVegetarian: selectedItem.is_vegetarian || undefined,
           isVegan: selectedItem.is_vegan || undefined,
