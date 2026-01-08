@@ -91,6 +91,18 @@ const BranchReservations = () => {
     setLoading(false);
   };
 
+  // If the currently selected date has no reservations, jump to the nearest upcoming one
+  useEffect(() => {
+    if (reservations.length === 0) return;
+
+    const selected = format(selectedDate, "yyyy-MM-dd");
+    const hasForSelected = reservations.some((r) => r.reservation_date === selected);
+    if (hasForSelected) return;
+
+    // reservations are already sorted by date/time in fetchReservations
+    setSelectedDate(parseISO(reservations[0].reservation_date));
+  }, [reservations, selectedDate]);
+
   const updateStatus = async (id: string, newStatus: "pending" | "confirmed" | "cancelled" | "completed" | "no_show") => {
     const { error } = await supabase.from("reservations").update({ status: newStatus }).eq("id", id);
     if (error) {
