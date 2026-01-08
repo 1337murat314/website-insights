@@ -15,9 +15,10 @@ import {
 } from "@/components/ui/dialog";
 import { ScrollArea } from "@/components/ui/scroll-area";
 import { Badge } from "@/components/ui/badge";
-import { Plus, Minus, FileText, Download, Loader2, ShoppingCart, X } from "lucide-react";
+import { Plus, Minus, Download, Loader2, ShoppingCart, X } from "lucide-react";
 import { toast } from "sonner";
-import { generateCateringQuotePDF } from "@/lib/pdfGenerator";
+import { generateCateringQuotePDF, generateQuoteNumber } from "@/lib/pdfGenerator";
+import { z } from "zod";
 
 interface CateringProduct {
   id: string;
@@ -54,6 +55,17 @@ interface CateringQuoteModalProps {
   onOpenChange: (open: boolean) => void;
 }
 
+// Validation schema
+const customerInfoSchema = z.object({
+  name: z.string().trim().min(1, "Name is required").max(100, "Name too long"),
+  email: z.string().trim().email("Invalid email").max(255, "Email too long"),
+  phone: z.string().trim().min(1, "Phone is required").max(20, "Phone too long"),
+  eventDate: z.string().optional(),
+  eventType: z.string().max(100, "Event type too long").optional(),
+  guestCount: z.string().max(10, "Guest count too long").optional(),
+  notes: z.string().max(1000, "Notes too long").optional(),
+});
+
 export default function CateringQuoteModal({ open, onOpenChange }: CateringQuoteModalProps) {
   const { t, language } = useLanguage();
   const [products, setProducts] = useState<CateringProduct[]>([]);
@@ -61,6 +73,7 @@ export default function CateringQuoteModal({ open, onOpenChange }: CateringQuote
   const [loading, setLoading] = useState(true);
   const [generating, setGenerating] = useState(false);
   const [step, setStep] = useState<"products" | "info">("products");
+  const [errors, setErrors] = useState<Record<string, string>>({});
   const [customerInfo, setCustomerInfo] = useState<CustomerInfo>({
     name: "",
     email: "",
@@ -111,14 +124,11 @@ export default function CateringQuoteModal({ open, onOpenChange }: CateringQuote
       const currentQty = existing?.quantity || 0;
       const newQty = Math.max(0, currentQty + delta);
 
-      // Check min/max constraints
       if (newQty > 0 && newQty < product.min_quantity) {
         if (delta > 0) {
-          // If adding, start with min_quantity
           const updated = prev.filter((sp) => sp.product.id !== product.id);
           return [...updated, { product, quantity: product.min_quantity }];
         }
-        // If removing and below min, remove entirely
         return prev.filter((sp) => sp.product.id !== product.id);
       }
 
@@ -160,32 +170,96 @@ export default function CateringQuoteModal({ open, onOpenChange }: CateringQuote
     });
   };
 
+  const validateForm = (): boolean => {
+    const result = customerInfoSchema.safeParse(customerInfo);
+    if (!result.success) {
+      const newErrors: Record<string, string> = {};
+      result.error.errors.forEach((err) => {
+        if (err.path[0]) {
+          newErrors[err.path[0] as string] = err.message;
+        }
+      });
+      setErrors(newErrors);
+      return false;
+    }
+    setErrors({});
+    return true;
+  };
+
   const handleGeneratePDF = async () => {
-    if (!customerInfo.name || !customerInfo.email || !customerInfo.phone) {
-      toast.error(t("Please fill in all required fields", "Lütfen tüm zorunlu alanları doldurun"));
+    if (!validateForm()) {
+      toast.error(t("Please fix the errors in the form", "Lütfen formdaki hataları düzeltin"));
       return;
     }
 
     setGenerating(true);
     try {
-      await generateCateringQuotePDF(selectedProducts, customerInfo, language);
+      const quoteNumber = generateQuoteNumber();
+      
+      // Generate the PDF and get the total
+      const { grandTotal } = await generateCateringQuotePDF(
+        selectedProducts, 
+        customerInfo, 
+        language,
+        quoteNumber
+      );
+
+      // Prepare products data for storage
+      const productsData = selectedProducts.map((sp) => ({
+        id: sp.product.id,
+        name: sp.product.name,
+        name_tr: sp.product.name_tr,
+        category: sp.product.category,
+        unit: sp.product.unit,
+        unit_tr: sp.product.unit_tr,
+        price_per_unit: sp.product.price_per_unit,
+        quantity: sp.quantity,
+        total: sp.product.price_per_unit * sp.quantity,
+      }));
+
+      // Save lead to database
+      const { error: saveError } = await supabase.from("catering_leads").insert({
+        quote_number: quoteNumber,
+        customer_name: customerInfo.name.trim(),
+        customer_email: customerInfo.email.trim().toLowerCase(),
+        customer_phone: customerInfo.phone.trim(),
+        event_date: customerInfo.eventDate || null,
+        event_type: customerInfo.eventType?.trim() || null,
+        guest_count: customerInfo.guestCount ? parseInt(customerInfo.guestCount) : null,
+        notes: customerInfo.notes?.trim() || null,
+        selected_products: productsData,
+        total_amount: grandTotal,
+        status: "new",
+      });
+
+      if (saveError) {
+        console.error("Failed to save lead:", saveError);
+        // Still show success since PDF was generated
+      }
+
       toast.success(t("Quote generated successfully!", "Teklif başarıyla oluşturuldu!"));
       onOpenChange(false);
-      setSelectedProducts([]);
-      setCustomerInfo({
-        name: "",
-        email: "",
-        phone: "",
-        eventDate: "",
-        eventType: "",
-        guestCount: "",
-        notes: "",
-      });
-      setStep("products");
+      resetForm();
     } catch (error) {
+      console.error("PDF generation error:", error);
       toast.error(t("Failed to generate quote", "Teklif oluşturulamadı"));
     }
     setGenerating(false);
+  };
+
+  const resetForm = () => {
+    setSelectedProducts([]);
+    setCustomerInfo({
+      name: "",
+      email: "",
+      phone: "",
+      eventDate: "",
+      eventType: "",
+      guestCount: "",
+      notes: "",
+    });
+    setStep("products");
+    setErrors({});
   };
 
   const getProductName = (product: CateringProduct) => {
@@ -357,7 +431,10 @@ export default function CateringQuoteModal({ open, onOpenChange }: CateringQuote
                     value={customerInfo.name}
                     onChange={(e) => setCustomerInfo({ ...customerInfo, name: e.target.value })}
                     placeholder={t("Your name", "Adınız")}
+                    className={errors.name ? "border-destructive" : ""}
+                    maxLength={100}
                   />
+                  {errors.name && <p className="text-xs text-destructive">{errors.name}</p>}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="email">{t("Email", "E-posta")} *</Label>
@@ -367,7 +444,10 @@ export default function CateringQuoteModal({ open, onOpenChange }: CateringQuote
                     value={customerInfo.email}
                     onChange={(e) => setCustomerInfo({ ...customerInfo, email: e.target.value })}
                     placeholder="email@example.com"
+                    className={errors.email ? "border-destructive" : ""}
+                    maxLength={255}
                   />
+                  {errors.email && <p className="text-xs text-destructive">{errors.email}</p>}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="phone">{t("Phone", "Telefon")} *</Label>
@@ -376,7 +456,10 @@ export default function CateringQuoteModal({ open, onOpenChange }: CateringQuote
                     value={customerInfo.phone}
                     onChange={(e) => setCustomerInfo({ ...customerInfo, phone: e.target.value })}
                     placeholder="+90 555 123 4567"
+                    className={errors.phone ? "border-destructive" : ""}
+                    maxLength={20}
                   />
+                  {errors.phone && <p className="text-xs text-destructive">{errors.phone}</p>}
                 </div>
                 <div className="space-y-2">
                   <Label htmlFor="eventDate">{t("Event Date", "Etkinlik Tarihi")}</Label>
@@ -394,6 +477,7 @@ export default function CateringQuoteModal({ open, onOpenChange }: CateringQuote
                     value={customerInfo.eventType}
                     onChange={(e) => setCustomerInfo({ ...customerInfo, eventType: e.target.value })}
                     placeholder={t("Wedding, Corporate, Birthday...", "Düğün, Kurumsal, Doğum Günü...")}
+                    maxLength={100}
                   />
                 </div>
                 <div className="space-y-2">
@@ -404,6 +488,8 @@ export default function CateringQuoteModal({ open, onOpenChange }: CateringQuote
                     value={customerInfo.guestCount}
                     onChange={(e) => setCustomerInfo({ ...customerInfo, guestCount: e.target.value })}
                     placeholder="50"
+                    min={1}
+                    max={9999}
                   />
                 </div>
                 <div className="space-y-2 md:col-span-2">
@@ -417,7 +503,11 @@ export default function CateringQuoteModal({ open, onOpenChange }: CateringQuote
                       "Özel istekler veya diyet gereksinimleri..."
                     )}
                     rows={3}
+                    maxLength={1000}
                   />
+                  <p className="text-xs text-muted-foreground text-right">
+                    {customerInfo.notes.length}/1000
+                  </p>
                 </div>
               </div>
 

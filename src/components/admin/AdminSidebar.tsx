@@ -21,6 +21,7 @@ import {
   ChevronRight,
   MonitorPlay,
   Utensils,
+  FileText,
 } from "lucide-react";
 import { useAuth } from "@/contexts/AuthContext";
 import { useLanguage } from "@/contexts/LanguageContext";
@@ -70,6 +71,7 @@ const AdminSidebar = () => {
     { path: "/admin", label: t("Dashboard", "Kontrol Paneli"), icon: LayoutDashboard, exact: true },
     { path: "/admin/staff-logins", label: t("Staff & Logins", "Personel & Girişler"), icon: KeyRound },
     { path: "/admin/catering", label: t("Catering", "Catering"), icon: ChefHat },
+    { path: "/admin/catering-leads", label: t("Catering Leads", "Catering Talepleri"), icon: FileText },
     { path: "/admin/analytics", label: t("Analytics", "Analitik"), icon: BarChart3 },
     { path: "/admin/audit-logs", label: t("Audit Logs", "Denetim Kayıtları"), icon: ScrollText },
     { path: "/admin/promo-codes", label: t("Promo Codes", "Promosyon Kodları"), icon: Gift },
