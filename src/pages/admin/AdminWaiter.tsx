@@ -96,24 +96,26 @@ const AdminWaiter = ({ branchId }: AdminWaiterProps) => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    const { data: ordersData, error: ordersError } = await supabase
+    let query = supabase
       .from("orders")
       .select("*")
       .gte("created_at", today.toISOString())
       .order("created_at", { ascending: false });
+
+    // Filter by branch in the query if branchId is provided
+    if (branchId) {
+      query = query.eq("branch_id", branchId);
+    }
+
+    const { data: ordersData, error: ordersError } = await query;
 
     if (ordersError) {
       console.error("Error fetching orders:", ordersError);
       return;
     }
 
-    // Filter by branch in JS if needed
-    const filteredOrders = branchId 
-      ? (ordersData || []).filter(o => (o as any).branch_id === branchId)
-      : ordersData || [];
-
     const ordersWithItems = await Promise.all(
-      filteredOrders.map(async (order) => {
+      (ordersData || []).map(async (order) => {
         const { data: items } = await supabase
           .from("order_items")
           .select("*")
@@ -130,24 +132,26 @@ const AdminWaiter = ({ branchId }: AdminWaiterProps) => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);
 
-    const { data, error } = await supabase
+    let query = supabase
       .from("service_requests")
       .select("*")
       .eq("status", "pending")
       .gte("created_at", today.toISOString())
       .order("created_at", { ascending: false });
 
+    // Filter by branch in the query if branchId is provided
+    if (branchId) {
+      query = query.eq("branch_id", branchId);
+    }
+
+    const { data, error } = await query;
+
     if (error) {
       console.error("Error fetching service requests:", error);
       return;
     }
 
-    // Filter by branch in JS if needed
-    const filteredRequests = branchId 
-      ? (data || []).filter(r => (r as any).branch_id === branchId)
-      : data || [];
-
-    setServiceRequests(filteredRequests);
+    setServiceRequests(data || []);
   }, [branchId]);
 
   useEffect(() => {
