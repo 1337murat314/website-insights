@@ -507,6 +507,7 @@ export type Database = {
       }
       orders: {
         Row: {
+          branch_id: string | null
           created_at: string
           customer_email: string | null
           customer_name: string
@@ -529,6 +530,7 @@ export type Database = {
           verification_code: string
         }
         Insert: {
+          branch_id?: string | null
           created_at?: string
           customer_email?: string | null
           customer_name: string
@@ -551,6 +553,7 @@ export type Database = {
           verification_code: string
         }
         Update: {
+          branch_id?: string | null
           created_at?: string
           customer_email?: string | null
           customer_name?: string
@@ -572,7 +575,15 @@ export type Database = {
           updated_at?: string
           verification_code?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "orders_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       profiles: {
         Row: {
@@ -657,6 +668,7 @@ export type Database = {
       }
       reservations: {
         Row: {
+          branch_id: string | null
           created_at: string
           guest_email: string
           guest_id: string | null
@@ -673,6 +685,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          branch_id?: string | null
           created_at?: string
           guest_email: string
           guest_id?: string | null
@@ -689,6 +702,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          branch_id?: string | null
           created_at?: string
           guest_email?: string
           guest_id?: string | null
@@ -705,6 +719,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "reservations_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "reservations_guest_id_fkey"
             columns: ["guest_id"]
@@ -747,6 +768,7 @@ export type Database = {
       }
       restaurant_tables: {
         Row: {
+          branch_id: string | null
           capacity: number
           created_at: string
           id: string
@@ -758,6 +780,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          branch_id?: string | null
           capacity?: number
           created_at?: string
           id?: string
@@ -769,6 +792,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          branch_id?: string | null
           capacity?: number
           created_at?: string
           id?: string
@@ -779,10 +803,19 @@ export type Database = {
           table_number?: string
           updated_at?: string
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "restaurant_tables_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       service_requests: {
         Row: {
+          branch_id: string | null
           created_at: string
           id: string
           order_id: string | null
@@ -792,6 +825,7 @@ export type Database = {
           updated_at: string
         }
         Insert: {
+          branch_id?: string | null
           created_at?: string
           id?: string
           order_id?: string | null
@@ -801,6 +835,7 @@ export type Database = {
           updated_at?: string
         }
         Update: {
+          branch_id?: string | null
           created_at?: string
           id?: string
           order_id?: string | null
@@ -810,6 +845,13 @@ export type Database = {
           updated_at?: string
         }
         Relationships: [
+          {
+            foreignKeyName: "service_requests_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "service_requests_order_id_fkey"
             columns: ["order_id"]
@@ -872,6 +914,7 @@ export type Database = {
       }
       staff_logins: {
         Row: {
+          branch_id: string | null
           code: string
           created_at: string | null
           id: string
@@ -881,6 +924,7 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          branch_id?: string | null
           code: string
           created_at?: string | null
           id?: string
@@ -890,6 +934,7 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          branch_id?: string | null
           code?: string
           created_at?: string | null
           id?: string
@@ -898,7 +943,15 @@ export type Database = {
           role?: string
           updated_at?: string | null
         }
-        Relationships: []
+        Relationships: [
+          {
+            foreignKeyName: "staff_logins_branch_id_fkey"
+            columns: ["branch_id"]
+            isOneToOne: false
+            referencedRelation: "branches"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       user_roles: {
         Row: {
