@@ -274,14 +274,14 @@ export default function CateringQuoteModal({ open, onOpenChange }: CateringQuote
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl max-h-[90vh] p-0 overflow-hidden">
-        <DialogHeader className="p-6 pb-0">
-          <DialogTitle className="text-2xl font-serif">
+      <DialogContent className="max-w-4xl h-[90vh] sm:h-auto sm:max-h-[90vh] p-0 overflow-hidden flex flex-col">
+        <DialogHeader className="p-4 sm:p-6 pb-2 sm:pb-0 flex-shrink-0">
+          <DialogTitle className="text-xl sm:text-2xl font-serif">
             {step === "products"
               ? t("Create Your Quote", "Teklifinizi Oluşturun")
               : t("Contact Information", "İletişim Bilgileri")}
           </DialogTitle>
-          <DialogDescription>
+          <DialogDescription className="text-sm">
             {step === "products"
               ? t(
                   "Select the products you'd like for your event. Prices will be shown in your quote.",
@@ -301,46 +301,46 @@ export default function CateringQuoteModal({ open, onOpenChange }: CateringQuote
               initial={{ opacity: 0, x: -20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: -20 }}
-              className="flex flex-col h-[calc(90vh-200px)]"
+              className="flex flex-col flex-1 min-h-0 overflow-hidden"
             >
               {loading ? (
                 <div className="flex-1 flex items-center justify-center">
                   <Loader2 className="h-8 w-8 animate-spin text-primary" />
                 </div>
               ) : (
-                <ScrollArea className="flex-1 px-6">
-                  <div className="space-y-6 pb-4">
+                <ScrollArea className="flex-1 min-h-0">
+                  <div className="px-4 sm:px-6 space-y-4 sm:space-y-6 pb-4">
                     {Object.entries(groupedProducts).map(([category, categoryProducts]) => (
                       <div key={category}>
-                        <h3 className="text-lg font-semibold mb-3 sticky top-0 bg-background py-2 border-b border-border">
+                        <h3 className="text-base sm:text-lg font-semibold mb-2 sm:mb-3 sticky top-0 bg-background py-2 border-b border-border z-10">
                           {category}
                         </h3>
-                        <div className="grid gap-3">
+                        <div className="grid gap-2 sm:gap-3">
                           {categoryProducts.map((product) => {
                             const quantity = getProductQuantity(product.id);
                             const isSelected = quantity > 0;
                             return (
                               <div
                                 key={product.id}
-                                className={`flex items-center justify-between p-4 rounded-xl border transition-all ${
+                                className={`flex flex-col sm:flex-row sm:items-center justify-between p-3 sm:p-4 rounded-xl border transition-all gap-3 ${
                                   isSelected
                                     ? "border-primary bg-primary/5"
                                     : "border-border hover:border-primary/50"
                                 }`}
                               >
                                 <div className="flex-1 min-w-0">
-                                  <h4 className="font-medium truncate">{getProductName(product)}</h4>
-                                  <p className="text-sm text-muted-foreground">
+                                  <h4 className="font-medium text-sm sm:text-base">{getProductName(product)}</h4>
+                                  <p className="text-xs sm:text-sm text-muted-foreground">
                                     {t("Min", "Min")}: {product.min_quantity} {getProductUnit(product)}
                                     {product.max_quantity && ` • ${t("Max", "Max")}: ${product.max_quantity}`}
                                   </p>
                                 </div>
-                                <div className="flex items-center gap-3 ml-4">
-                                  <div className="flex items-center gap-2">
+                                <div className="flex items-center justify-between sm:justify-end gap-2 sm:gap-3">
+                                  <div className="flex items-center gap-1 sm:gap-2">
                                     <Button
                                       variant="outline"
                                       size="icon"
-                                      className="h-8 w-8"
+                                      className="h-8 w-8 sm:h-8 sm:w-8"
                                       onClick={() => updateQuantity(product, -1)}
                                       disabled={quantity === 0}
                                     >
@@ -350,20 +350,20 @@ export default function CateringQuoteModal({ open, onOpenChange }: CateringQuote
                                       type="number"
                                       value={quantity || ""}
                                       onChange={(e) => setQuantity(product, parseInt(e.target.value) || 0)}
-                                      className="w-16 h-8 text-center"
+                                      className="w-14 sm:w-16 h-8 text-center text-sm"
                                       placeholder="0"
                                       min={0}
                                     />
                                     <Button
                                       variant="outline"
                                       size="icon"
-                                      className="h-8 w-8"
+                                      className="h-8 w-8 sm:h-8 sm:w-8"
                                       onClick={() => updateQuantity(product, 1)}
                                     >
                                       <Plus className="h-4 w-4" />
                                     </Button>
                                   </div>
-                                  <span className="text-sm text-muted-foreground w-16 text-right">
+                                  <span className="text-xs sm:text-sm text-muted-foreground w-14 sm:w-16 text-right">
                                     {getProductUnit(product)}
                                   </span>
                                 </div>
@@ -378,29 +378,30 @@ export default function CateringQuoteModal({ open, onOpenChange }: CateringQuote
               )}
 
               {/* Footer with selected items */}
-              <div className="p-6 border-t border-border bg-muted/30">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-2">
-                    <ShoppingCart className="h-5 w-5 text-primary" />
-                    <span className="font-medium">
+              <div className="p-4 sm:p-6 border-t border-border bg-muted/30 flex-shrink-0">
+                <div className="flex items-center justify-between gap-2">
+                  <div className="flex items-center gap-2 min-w-0">
+                    <ShoppingCart className="h-4 w-4 sm:h-5 sm:w-5 text-primary flex-shrink-0" />
+                    <span className="font-medium text-sm sm:text-base truncate">
                       {totalItems} {t("items selected", "ürün seçildi")}
                     </span>
                   </div>
                   <Button
-                    size="lg"
+                    size="default"
                     onClick={() => setStep("info")}
                     disabled={selectedProducts.length === 0}
+                    className="flex-shrink-0"
                   >
                     {t("Continue", "Devam Et")}
                   </Button>
                 </div>
                 {selectedProducts.length > 0 && (
-                  <div className="flex flex-wrap gap-2 mt-3">
+                  <div className="flex flex-wrap gap-1 sm:gap-2 mt-3 max-h-20 overflow-y-auto">
                     {selectedProducts.map((sp) => (
                       <Badge
                         key={sp.product.id}
                         variant="secondary"
-                        className="flex items-center gap-1"
+                        className="flex items-center gap-1 text-xs"
                       >
                         {sp.quantity}x {getProductName(sp.product)}
                         <button
@@ -421,11 +422,11 @@ export default function CateringQuoteModal({ open, onOpenChange }: CateringQuote
               initial={{ opacity: 0, x: 20 }}
               animate={{ opacity: 1, x: 0 }}
               exit={{ opacity: 0, x: 20 }}
-              className="p-6 pt-4"
+              className="flex-1 overflow-y-auto p-4 sm:p-6 pt-2 sm:pt-4"
             >
-              <div className="grid gap-4 md:grid-cols-2">
+              <div className="grid gap-3 sm:gap-4 grid-cols-1 sm:grid-cols-2">
                 <div className="space-y-2">
-                  <Label htmlFor="name">{t("Full Name", "Ad Soyad")} *</Label>
+                  <Label htmlFor="name" className="text-sm">{t("Full Name", "Ad Soyad")} *</Label>
                   <Input
                     id="name"
                     value={customerInfo.name}
@@ -437,7 +438,7 @@ export default function CateringQuoteModal({ open, onOpenChange }: CateringQuote
                   {errors.name && <p className="text-xs text-destructive">{errors.name}</p>}
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="email">{t("Email", "E-posta")} *</Label>
+                  <Label htmlFor="email" className="text-sm">{t("Email", "E-posta")} *</Label>
                   <Input
                     id="email"
                     type="email"
@@ -450,7 +451,7 @@ export default function CateringQuoteModal({ open, onOpenChange }: CateringQuote
                   {errors.email && <p className="text-xs text-destructive">{errors.email}</p>}
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="phone">{t("Phone", "Telefon")} *</Label>
+                  <Label htmlFor="phone" className="text-sm">{t("Phone", "Telefon")} *</Label>
                   <Input
                     id="phone"
                     value={customerInfo.phone}
@@ -462,7 +463,7 @@ export default function CateringQuoteModal({ open, onOpenChange }: CateringQuote
                   {errors.phone && <p className="text-xs text-destructive">{errors.phone}</p>}
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="eventDate">{t("Event Date", "Etkinlik Tarihi")}</Label>
+                  <Label htmlFor="eventDate" className="text-sm">{t("Event Date", "Etkinlik Tarihi")}</Label>
                   <Input
                     id="eventDate"
                     type="date"
@@ -471,7 +472,7 @@ export default function CateringQuoteModal({ open, onOpenChange }: CateringQuote
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="eventType">{t("Event Type", "Etkinlik Türü")}</Label>
+                  <Label htmlFor="eventType" className="text-sm">{t("Event Type", "Etkinlik Türü")}</Label>
                   <Input
                     id="eventType"
                     value={customerInfo.eventType}
@@ -481,7 +482,7 @@ export default function CateringQuoteModal({ open, onOpenChange }: CateringQuote
                   />
                 </div>
                 <div className="space-y-2">
-                  <Label htmlFor="guestCount">{t("Guest Count", "Misafir Sayısı")}</Label>
+                  <Label htmlFor="guestCount" className="text-sm">{t("Guest Count", "Misafir Sayısı")}</Label>
                   <Input
                     id="guestCount"
                     type="number"
@@ -492,8 +493,8 @@ export default function CateringQuoteModal({ open, onOpenChange }: CateringQuote
                     max={9999}
                   />
                 </div>
-                <div className="space-y-2 md:col-span-2">
-                  <Label htmlFor="notes">{t("Additional Notes", "Ek Notlar")}</Label>
+                <div className="space-y-2 sm:col-span-2">
+                  <Label htmlFor="notes" className="text-sm">{t("Additional Notes", "Ek Notlar")}</Label>
                   <Textarea
                     id="notes"
                     value={customerInfo.notes}
@@ -502,7 +503,7 @@ export default function CateringQuoteModal({ open, onOpenChange }: CateringQuote
                       "Any special requests or dietary requirements...",
                       "Özel istekler veya diyet gereksinimleri..."
                     )}
-                    rows={3}
+                    rows={2}
                     maxLength={1000}
                   />
                   <p className="text-xs text-muted-foreground text-right">
@@ -512,13 +513,13 @@ export default function CateringQuoteModal({ open, onOpenChange }: CateringQuote
               </div>
 
               {/* Selected products summary */}
-              <div className="mt-6 p-4 bg-muted/50 rounded-xl">
-                <h4 className="font-medium mb-2">{t("Selected Products", "Seçilen Ürünler")}</h4>
-                <div className="space-y-1 text-sm">
+              <div className="mt-4 sm:mt-6 p-3 sm:p-4 bg-muted/50 rounded-xl">
+                <h4 className="font-medium mb-2 text-sm sm:text-base">{t("Selected Products", "Seçilen Ürünler")}</h4>
+                <div className="space-y-1 text-xs sm:text-sm max-h-24 overflow-y-auto">
                   {selectedProducts.map((sp) => (
                     <div key={sp.product.id} className="flex justify-between">
-                      <span>{getProductName(sp.product)}</span>
-                      <span className="text-muted-foreground">
+                      <span className="truncate mr-2">{getProductName(sp.product)}</span>
+                      <span className="text-muted-foreground flex-shrink-0">
                         {sp.quantity} {getProductUnit(sp.product)}
                       </span>
                     </div>
@@ -526,7 +527,7 @@ export default function CateringQuoteModal({ open, onOpenChange }: CateringQuote
                 </div>
               </div>
 
-              <div className="flex gap-3 mt-6">
+              <div className="flex gap-2 sm:gap-3 mt-4 sm:mt-6 pb-2">
                 <Button variant="outline" onClick={() => setStep("products")} className="flex-1">
                   {t("Back", "Geri")}
                 </Button>
