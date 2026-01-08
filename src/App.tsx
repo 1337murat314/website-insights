@@ -119,9 +119,9 @@ const AnimatedRoutes = () => {
         <Route path="/:branch/waiter" element={<BranchWaiter />} />
 
         {/* Branch-specific admin routes */}
-        <Route path="/:branch/admin/auth" element={<BranchAdminAuth />} />
-        <Route path="/:branch/admin" element={<BranchAdminLayout />}>
-          <Route index element={<BranchDashboard />} />
+        <Route path="/:branch/admin" element={<BranchAdminAuth />} />
+        <Route path="/:branch/admin/*" element={<BranchAdminLayout />}>
+          <Route path="dashboard" element={<BranchDashboard />} />
           <Route path="orders" element={<BranchOrders />} />
           <Route path="waiter" element={<AdminWaiter />} />
           <Route path="kds" element={<AdminKDS />} />
@@ -130,7 +130,6 @@ const AnimatedRoutes = () => {
           <Route path="tables" element={<BranchTables />} />
           <Route path="qr-codes" element={<BranchQRCodes />} />
           <Route path="promo-codes" element={<AdminPromoCodes />} />
-          <Route path="staff-logins" element={<AdminStaffLogins />} />
           <Route path="analytics" element={<AdminAnalytics />} />
           <Route path="settings" element={<AdminSettings />} />
         </Route>

@@ -988,9 +988,28 @@ export type Database = {
       }
       is_admin_or_manager: { Args: { _user_id: string }; Returns: boolean }
       is_waiter_or_above: { Args: { _user_id: string }; Returns: boolean }
-      verify_staff_login: {
-        Args: { staff_code: string; staff_name: string; staff_role: string }
-        Returns: string
+      verify_staff_login:
+        | {
+            Args: { staff_code: string; staff_name: string; staff_role: string }
+            Returns: string
+          }
+        | {
+            Args: {
+              staff_branch_id?: string
+              staff_code: string
+              staff_name: string
+              staff_role: string
+            }
+            Returns: Json
+          }
+      verify_staff_login_by_slug: {
+        Args: {
+          staff_branch_slug?: string
+          staff_code: string
+          staff_name: string
+          staff_role: string
+        }
+        Returns: Json
       }
     }
     Enums: {
