@@ -1,6 +1,5 @@
-import { useEffect } from "react";
+import { useEffect, useState } from "react";
 import { useNavigate, Outlet, useLocation, useParams } from "react-router-dom";
-import { useAuth } from "@/contexts/AuthContext";
 import { useBranch, BranchProvider } from "@/contexts/BranchContext";
 import BranchAdminSidebar from "./BranchAdminSidebar";
 import { Loader2, AlertCircle } from "lucide-react";
@@ -13,20 +12,46 @@ const pageVariants = {
   exit: { opacity: 0, x: -20, transition: { duration: 0.2, ease: "easeIn" as const } },
 };
 
+interface StaffSession {
+  id: string;
+  name: string;
+  role: string;
+  branch_id: string;
+  branch_slug: string;
+  loginTime: string;
+}
+
 const BranchAdminContent = () => {
-  const { user, isLoading: authLoading } = useAuth();
   const { branch, isLoading: branchLoading, error } = useBranch();
+  const [session, setSession] = useState<StaffSession | null>(null);
+  const [isChecking, setIsChecking] = useState(true);
   const navigate = useNavigate();
   const location = useLocation();
   const { branch: branchSlug } = useParams();
 
   useEffect(() => {
-    if (!authLoading && !user) {
-      navigate(`/${branchSlug}/admin/auth`);
+    // Check for branch admin session
+    const storedSession = localStorage.getItem(`branch_admin_session_${branchSlug}`);
+    if (storedSession) {
+      try {
+        const parsed = JSON.parse(storedSession);
+        if (parsed.branch_slug === branchSlug) {
+          setSession(parsed);
+        } else {
+          localStorage.removeItem(`branch_admin_session_${branchSlug}`);
+          navigate(`/${branchSlug}/admin`);
+        }
+      } catch {
+        localStorage.removeItem(`branch_admin_session_${branchSlug}`);
+        navigate(`/${branchSlug}/admin`);
+      }
+    } else {
+      navigate(`/${branchSlug}/admin`);
     }
-  }, [user, authLoading, navigate, branchSlug]);
+    setIsChecking(false);
+  }, [branchSlug, navigate]);
 
-  if (authLoading || branchLoading) {
+  if (isChecking || branchLoading) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center">
@@ -50,7 +75,7 @@ const BranchAdminContent = () => {
     );
   }
 
-  if (!user) {
+  if (!session) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-background">
         <div className="text-center">
@@ -63,7 +88,7 @@ const BranchAdminContent = () => {
 
   return (
     <div className="min-h-screen flex w-full bg-background">
-      <BranchAdminSidebar />
+      <BranchAdminSidebar session={session} />
       <main className="flex-1 p-4 lg:p-8 overflow-auto">
         <AnimatePresence mode="wait">
           <motion.div

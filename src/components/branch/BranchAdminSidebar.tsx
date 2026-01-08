@@ -1,6 +1,5 @@
 import { useState } from "react";
 import { NavLink, useNavigate, useParams } from "react-router-dom";
-import { useAuth } from "@/contexts/AuthContext";
 import { useBranch } from "@/contexts/BranchContext";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { cn } from "@/lib/utils";
@@ -14,7 +13,6 @@ import {
   TableProperties,
   QrCode,
   Ticket,
-  Users,
   BarChart3,
   Settings,
   LogOut,
@@ -30,8 +28,17 @@ import {
 import logoLight from "@/assets/logo-light.png";
 import logoDark from "@/assets/logo-dark.png";
 
+interface StaffSession {
+  id: string;
+  name: string;
+  role: string;
+  branch_id: string;
+  branch_slug: string;
+  loginTime: string;
+}
+
 const getNavItems = (branchSlug: string, t: (en: string, tr: string) => string) => [
-  { path: `/${branchSlug}/admin`, label: t("Dashboard", "Panel"), icon: LayoutDashboard, end: true },
+  { path: `/${branchSlug}/admin/dashboard`, label: t("Dashboard", "Panel"), icon: LayoutDashboard },
   { path: `/${branchSlug}/admin/orders`, label: t("Orders", "Siparişler"), icon: ShoppingBag },
   { path: `/${branchSlug}/admin/waiter`, label: t("Waiter View", "Garson Görünümü"), icon: Bell },
   { path: `/${branchSlug}/admin/kds`, label: t("Kitchen Display", "Mutfak Ekranı"), icon: ChefHat },
@@ -40,15 +47,17 @@ const getNavItems = (branchSlug: string, t: (en: string, tr: string) => string) 
   { path: `/${branchSlug}/admin/tables`, label: t("Tables", "Masalar"), icon: TableProperties },
   { path: `/${branchSlug}/admin/qr-codes`, label: t("QR Codes", "QR Kodlar"), icon: QrCode },
   { path: `/${branchSlug}/admin/promo-codes`, label: t("Promo Codes", "Promosyonlar"), icon: Ticket },
-  { path: `/${branchSlug}/admin/staff-logins`, label: t("Staff Logins", "Personel Girişleri"), icon: Users },
   { path: `/${branchSlug}/admin/analytics`, label: t("Analytics", "Analitik"), icon: BarChart3 },
   { path: `/${branchSlug}/admin/settings`, label: t("Settings", "Ayarlar"), icon: Settings },
 ];
 
-const BranchAdminSidebar = () => {
+interface BranchAdminSidebarProps {
+  session: StaffSession;
+}
+
+const BranchAdminSidebar = ({ session }: BranchAdminSidebarProps) => {
   const [isCollapsed, setIsCollapsed] = useState(false);
   const [isMobileOpen, setIsMobileOpen] = useState(false);
-  const { user, signOut } = useAuth();
   const { branch } = useBranch();
   const { t, language, setLanguage } = useLanguage();
   const navigate = useNavigate();
@@ -56,9 +65,9 @@ const BranchAdminSidebar = () => {
 
   const navItems = getNavItems(branchSlug || "", t);
 
-  const handleSignOut = async () => {
-    await signOut();
-    navigate(`/${branchSlug}/admin/auth`);
+  const handleSignOut = () => {
+    localStorage.removeItem(`branch_admin_session_${branchSlug}`);
+    navigate(`/${branchSlug}/admin`);
   };
 
   const toggleLanguage = () => {
@@ -136,7 +145,6 @@ const BranchAdminSidebar = () => {
             <NavLink
               key={item.path}
               to={item.path}
-              end={item.end}
               onClick={() => setIsMobileOpen(false)}
               className={({ isActive }) =>
                 cn(
@@ -155,9 +163,9 @@ const BranchAdminSidebar = () => {
 
         {/* User info & Logout */}
         <div className="p-4 border-t">
-          {!isCollapsed && user && (
+          {!isCollapsed && session && (
             <div className="mb-3 text-sm">
-              <p className="font-medium truncate">{user.email}</p>
+              <p className="font-medium truncate">{session.name}</p>
               <p className="text-xs text-muted-foreground">{branch?.name} Admin</p>
             </div>
           )}

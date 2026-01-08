@@ -45,7 +45,7 @@ const BranchKitchenLogin = () => {
 
     setIsLoading(true);
     try {
-      const { data, error } = await supabase.rpc("verify_staff_login", {
+      const { data, error } = await supabase.rpc("verify_staff_login_by_slug", {
         staff_name: name.trim(),
         staff_code: code,
         staff_role: "kitchen",
