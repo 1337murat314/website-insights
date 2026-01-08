@@ -61,13 +61,13 @@ export async function generateCateringQuotePDF(
 
   const t = (en: string, tr: string) => (language === "tr" ? tr : en);
 
-  // Colors - Califorian brand colors (matching the golden/bronze logo)
-  const primaryColor: [number, number, number] = [196, 160, 82]; // Rich gold from logo #C4A052
+  // Colors - Califorian brand colors (orange like the logo)
+  const primaryColor: [number, number, number] = [234, 121, 56]; // Warm orange #EA7938
   const darkColor: [number, number, number] = [26, 26, 26]; // Dark text #1A1A1A
-  const accentColor: [number, number, number] = [166, 136, 62]; // Darker gold accent
+  const accentColor: [number, number, number] = [204, 91, 26]; // Darker orange accent #CC5B1A
   const textColor: [number, number, number] = [33, 33, 33];
   const mutedColor: [number, number, number] = [100, 100, 100];
-  const lightBg: [number, number, number] = [250, 247, 242]; // Warm off-white
+  const lightBg: [number, number, number] = [255, 248, 243]; // Warm peachy off-white
 
   // Header background with gradient effect
   doc.setFillColor(...lightBg);
