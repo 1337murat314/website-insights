@@ -23,12 +23,20 @@ interface BranchContextType {
 
 const BranchContext = createContext<BranchContextType | undefined>(undefined);
 
-export const BranchProvider = ({ children }: { children: ReactNode }) => {
-  const { branch: branchSlug } = useParams<{ branch: string }>();
+interface BranchProviderProps {
+  children: ReactNode;
+  branchSlugOverride?: string; // For super admin viewing branches
+}
+
+export const BranchProvider = ({ children, branchSlugOverride }: BranchProviderProps) => {
+  const { branch: branchSlugFromUrl, branchSlug: branchSlugParam } = useParams<{ branch?: string; branchSlug?: string }>();
   const [branch, setBranch] = useState<Branch | null>(null);
   const [allBranches, setAllBranches] = useState<Branch[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+
+  // Use override if provided, otherwise use URL params
+  const branchSlug = branchSlugOverride || branchSlugFromUrl || branchSlugParam;
 
   useEffect(() => {
     const fetchBranches = async () => {
