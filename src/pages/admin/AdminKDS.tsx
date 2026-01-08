@@ -47,7 +47,11 @@ const statusConfig: Record<string, { label: string; labelTr: string; color: stri
   ready: { label: "READY", labelTr: "HAZIR", color: "text-green-500", bgColor: "bg-green-500/20 border-green-500" },
 };
 
-const AdminKDS = () => {
+interface AdminKDSProps {
+  branchId?: string;
+}
+
+const AdminKDS = ({ branchId }: AdminKDSProps) => {
   const { language, t } = useLanguage();
   const [orders, setOrders] = useState<Order[]>([]);
   const [orderItems, setOrderItems] = useState<Record<string, OrderItem[]>>({});
@@ -149,17 +153,29 @@ const AdminKDS = () => {
 
   const fetchOrders = async () => {
     try {
+      const filters: { status: string[]; branch_id?: string } = {
+        status: ["new", "preparing", "ready"],
+      };
+      if (branchId) {
+        filters.branch_id = branchId;
+      }
+
       const { data, error } = await supabase
         .from("orders")
         .select("*")
-        .in("status", ["new", "preparing", "ready"])
+        .in("status", filters.status)
         .order("created_at", { ascending: true });
 
       if (error) throw error;
-      setOrders(data || []);
+      
+      // Filter by branch in JS if needed (fallback)
+      const filteredData = branchId 
+        ? (data || []).filter(o => (o as any).branch_id === branchId)
+        : data;
+      setOrders(filteredData || []);
 
       // Fetch items for all orders
-      for (const order of data || []) {
+      for (const order of filteredData || []) {
         fetchOrderItemsForOrder(order.id);
       }
     } catch (error) {
