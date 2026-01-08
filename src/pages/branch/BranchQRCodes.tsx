@@ -40,14 +40,11 @@ const BranchQRCodes = () => {
     const fetchTables = async () => {
       const { data } = await supabase
         .from("restaurant_tables")
-        .select("id, table_number, capacity")
+        .select("id, table_number, capacity, branch_id")
+        .eq("branch_id", branch.id)
         .order("table_number");
 
-      // Filter by branch
-      const branchTables = (data || []).filter(
-        (t: any) => t.branch_id === branch.id || !t.branch_id
-      );
-      setTables(branchTables);
+      setTables(data || []);
       setIsLoading(false);
     };
 
