@@ -238,16 +238,25 @@ const AdminMenu = () => {
   };
 
   const duplicateItem = async (item: MenuItem) => {
+    // Only include fields that should be duplicated, excluding id and timestamps
     const newItem = {
-      ...item,
-      id: undefined,
       name: `${item.name} (Copy)`,
       name_tr: item.name_tr ? `${item.name_tr} (Kopya)` : null,
+      description: item.description,
+      description_tr: item.description_tr,
+      price: item.price,
+      image_url: item.image_url,
+      category_id: item.category_id,
+      is_vegetarian: item.is_vegetarian,
+      is_vegan: item.is_vegan,
+      is_gluten_free: item.is_gluten_free,
+      is_spicy: item.is_spicy,
       is_featured: false,
+      is_available: item.is_available,
       sort_order: item.sort_order + 1,
     };
     
-    const { error } = await supabase.from("menu_items").insert([newItem as any]);
+    const { error } = await supabase.from("menu_items").insert([newItem]);
     if (error) {
       toast({ title: "Error", description: error.message, variant: "destructive" });
     } else {
