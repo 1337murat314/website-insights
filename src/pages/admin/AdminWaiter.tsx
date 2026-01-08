@@ -124,6 +124,8 @@ const AdminWaiter = ({ branchId }: AdminWaiterProps) => {
 
     setOrders(ordersWithItems);
     setIsLoading(false);
+  }, [branchId]);
+
   const fetchServiceRequests = useCallback(async () => {
     const today = new Date();
     today.setHours(0, 0, 0, 0);

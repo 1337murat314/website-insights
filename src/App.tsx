@@ -21,7 +21,7 @@ import OrderTracking from "./pages/OrderTracking";
 import Catering from "./pages/Catering";
 import NotFound from "./pages/NotFound";
 
-// Admin imports
+// Super Admin imports
 import AdminAuth from "./pages/admin/AdminAuth";
 import AdminLayout from "./components/admin/AdminLayout";
 import AdminDashboard from "./pages/admin/AdminDashboard";
@@ -39,10 +39,25 @@ import AdminQRCodes from "./pages/admin/AdminQRCodes";
 import AdminKDS from "./pages/admin/AdminKDS";
 import AdminWaiter from "./pages/admin/AdminWaiter";
 import AdminStaffLogins from "./pages/admin/AdminStaffLogins";
+
+// Legacy staff routes (redirects to branch-specific)
 import KitchenLogin from "./pages/KitchenLogin";
 import WaiterLogin from "./pages/WaiterLogin";
 import Kitchen from "./pages/Kitchen";
 import Waiter from "./pages/Waiter";
+
+// Branch-specific imports
+import BranchAdminLayout from "./components/branch/BranchAdminLayout";
+import BranchAdminAuth from "./pages/branch/BranchAdminAuth";
+import BranchDashboard from "./pages/branch/BranchDashboard";
+import BranchKitchenLogin from "./pages/branch/BranchKitchenLogin";
+import BranchWaiterLogin from "./pages/branch/BranchWaiterLogin";
+import BranchKitchen from "./pages/branch/BranchKitchen";
+import BranchWaiter from "./pages/branch/BranchWaiter";
+import BranchOrders from "./pages/branch/BranchOrders";
+import BranchReservations from "./pages/branch/BranchReservations";
+import BranchTables from "./pages/branch/BranchTables";
+import BranchQRCodes from "./pages/branch/BranchQRCodes";
 
 const queryClient = new QueryClient();
 
@@ -70,13 +85,13 @@ const AnimatedRoutes = () => {
         <Route path="/reservations" element={<Reservations />} />
         <Route path="/catering" element={<Catering />} />
         
-        {/* Staff routes */}
+        {/* Legacy Staff routes (kept for backwards compatibility) */}
         <Route path="/kitchen-login" element={<KitchenLogin />} />
         <Route path="/waiter-login" element={<WaiterLogin />} />
         <Route path="/kitchen" element={<Kitchen />} />
         <Route path="/waiter" element={<Waiter />} />
         
-        {/* Admin routes */}
+        {/* Super Admin routes (all branches) */}
         <Route path="/admin/auth" element={<AdminAuth />} />
         <Route path="/admin" element={<AdminLayout />}>
           <Route index element={<AdminDashboard />} />
@@ -93,6 +108,29 @@ const AnimatedRoutes = () => {
           <Route path="staff-logins" element={<AdminStaffLogins />} />
           <Route path="analytics" element={<AdminAnalytics />} />
           <Route path="audit-logs" element={<AdminAuditLogs />} />
+          <Route path="settings" element={<AdminSettings />} />
+        </Route>
+
+        {/* Branch-specific staff routes */}
+        <Route path="/:branch/kitchen-login" element={<BranchKitchenLogin />} />
+        <Route path="/:branch/waiter-login" element={<BranchWaiterLogin />} />
+        <Route path="/:branch/kitchen" element={<BranchKitchen />} />
+        <Route path="/:branch/waiter" element={<BranchWaiter />} />
+
+        {/* Branch-specific admin routes */}
+        <Route path="/:branch/admin/auth" element={<BranchAdminAuth />} />
+        <Route path="/:branch/admin" element={<BranchAdminLayout />}>
+          <Route index element={<BranchDashboard />} />
+          <Route path="orders" element={<BranchOrders />} />
+          <Route path="waiter" element={<AdminWaiter />} />
+          <Route path="kds" element={<AdminKDS />} />
+          <Route path="reservations" element={<BranchReservations />} />
+          <Route path="menu" element={<AdminMenu />} />
+          <Route path="tables" element={<BranchTables />} />
+          <Route path="qr-codes" element={<BranchQRCodes />} />
+          <Route path="promo-codes" element={<AdminPromoCodes />} />
+          <Route path="staff-logins" element={<AdminStaffLogins />} />
+          <Route path="analytics" element={<AdminAnalytics />} />
           <Route path="settings" element={<AdminSettings />} />
         </Route>
         
