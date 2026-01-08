@@ -58,6 +58,7 @@ import BranchOrders from "./pages/branch/BranchOrders";
 import BranchReservations from "./pages/branch/BranchReservations";
 import BranchTables from "./pages/branch/BranchTables";
 import BranchQRCodes from "./pages/branch/BranchQRCodes";
+import BranchMenu from "./pages/branch/BranchMenu";
 
 const queryClient = new QueryClient();
 
@@ -125,7 +126,7 @@ const AnimatedRoutes = () => {
           <Route path="waiter" element={<AdminWaiter />} />
           <Route path="kds" element={<AdminKDS />} />
           <Route path="reservations" element={<BranchReservations />} />
-          <Route path="menu" element={<AdminMenu />} />
+          <Route path="menu" element={<BranchMenu />} />
           <Route path="tables" element={<BranchTables />} />
           <Route path="qr-codes" element={<BranchQRCodes />} />
           <Route path="promo-codes" element={<AdminPromoCodes />} />
