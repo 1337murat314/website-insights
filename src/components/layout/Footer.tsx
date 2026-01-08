@@ -19,8 +19,8 @@ const Footer = () => {
             </Link>
             <p className="text-muted-foreground text-sm leading-relaxed">
               {t(
-                "23 years as the address of quality and trust. Serving healthy and delicious food with passion.",
-                "23 yıldır kalite ve güvenin adresi. Tutku ile sağlıklı ve lezzetli yemekler sunuyoruz."
+                "26 years as the address of quality and trust. Serving healthy and delicious food with passion.",
+                "26 yıldır kalite ve güvenin adresi. Tutku ile sağlıklı ve lezzetli yemekler sunuyoruz."
               )}
             </p>
             <div className="flex gap-3">

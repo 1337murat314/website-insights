@@ -60,7 +60,7 @@ const HeroSection = () => {
             className="mb-8"
           >
             <span className="badge-primary">
-              {t("Est. 2001 — 23 Years of Excellence", "2001'den beri — 23 Yıllık Mükemmellik")}
+              {t("Est. 2000 — 26 Years of Excellence", "2000'den beri — 26 Yıllık Mükemmellik")}
             </span>
           </motion.div>
 
@@ -146,7 +146,7 @@ const HeroSection = () => {
         >
           <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
             {[
-              { value: "23+", label: t("Years", "Yıl") },
+              { value: "26+", label: t("Years", "Yıl") },
               { value: "3", label: t("Locations", "Şube") },
               { value: "100K+", label: t("Happy Guests", "Mutlu Misafir") },
               { value: "1000+", label: t("Daily Servings", "Günlük Servis") },
