@@ -39,6 +39,7 @@ import AdminQRCodes from "./pages/admin/AdminQRCodes";
 import AdminKDS from "./pages/admin/AdminKDS";
 import AdminWaiter from "./pages/admin/AdminWaiter";
 import AdminStaffLogins from "./pages/admin/AdminStaffLogins";
+import SuperAdminBranchWrapper from "./pages/admin/SuperAdminBranchWrapper";
 
 // Legacy staff routes (redirects to branch-specific)
 import KitchenLogin from "./pages/KitchenLogin";
@@ -96,20 +97,24 @@ const AnimatedRoutes = () => {
         <Route path="/admin/auth" element={<AdminAuth />} />
         <Route path="/admin" element={<AdminLayout />}>
           <Route index element={<AdminDashboard />} />
-          <Route path="orders" element={<AdminOrders />} />
-          <Route path="waiter" element={<AdminWaiter />} />
-          <Route path="kds" element={<AdminKDS />} />
-          <Route path="reservations" element={<AdminReservations />} />
-          <Route path="leads" element={<AdminLeads />} />
-          <Route path="menu" element={<AdminMenu />} />
-          <Route path="tables" element={<AdminTables />} />
-          <Route path="qr-codes" element={<AdminQRCodes />} />
-          <Route path="promo-codes" element={<AdminPromoCodes />} />
-          <Route path="staff" element={<AdminStaff />} />
           <Route path="staff-logins" element={<AdminStaffLogins />} />
           <Route path="analytics" element={<AdminAnalytics />} />
           <Route path="audit-logs" element={<AdminAuditLogs />} />
+          <Route path="promo-codes" element={<AdminPromoCodes />} />
           <Route path="settings" element={<AdminSettings />} />
+          
+          {/* Super Admin viewing branch-specific pages */}
+          <Route path="branch/:branchSlug" element={<SuperAdminBranchWrapper />}>
+            <Route index element={<BranchDashboard />} />
+            <Route path="orders" element={<BranchOrders />} />
+            <Route path="reservations" element={<BranchReservations />} />
+            <Route path="menu" element={<BranchMenu />} />
+            <Route path="tables" element={<BranchTables />} />
+            <Route path="qr-codes" element={<BranchQRCodes />} />
+            <Route path="kitchen" element={<BranchKitchen />} />
+            <Route path="waiter" element={<BranchWaiter />} />
+            <Route path="staff" element={<AdminStaff />} />
+          </Route>
         </Route>
 
         {/* Branch-specific staff routes */}
