@@ -1,7 +1,7 @@
 import { useState, useEffect, useMemo } from "react";
 import { useSearchParams } from "react-router-dom";
-import { motion } from "framer-motion";
-import { Flame, Leaf, Wheat, Search, UtensilsCrossed, MapPin } from "lucide-react";
+import { motion, AnimatePresence } from "framer-motion";
+import { Flame, Leaf, Wheat, Search, UtensilsCrossed, MapPin, ChevronUp, ChevronDown } from "lucide-react";
 import Layout from "@/components/layout/Layout";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useCart } from "@/contexts/CartContext";
@@ -61,6 +61,7 @@ const OrderOnline = () => {
   const [dietaryFilter, setDietaryFilter] = useState<string | null>(null);
   const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
+  const [filtersExpanded, setFiltersExpanded] = useState(false);
 
   // Get table number and branch from URL params
   useEffect(() => {
@@ -268,64 +269,88 @@ const OrderOnline = () => {
       )}
 
       {/* Search & Filters */}
-      <section className="py-6 bg-secondary sticky top-20 z-40 border-b border-border">
+      <section className="py-3 bg-secondary sticky top-20 z-40 border-b border-border">
         <div className="container mx-auto container-padding">
-          {/* Search */}
-          <div className="relative mb-4">
-            <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
-            <Input
-              type="text"
-              placeholder={t("Search menu...", "Menüde ara...")}
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="pl-12 bg-background border-border"
-            />
-          </div>
-
-          {/* Category Tabs */}
-          <div className="flex flex-wrap gap-2 justify-center mb-4">
-            <button
-              onClick={() => setActiveCategory(null)}
-              className={`px-4 py-2 rounded-full font-medium text-sm transition-all ${
-                activeCategory === null
-                  ? "bg-primary text-primary-foreground"
-                  : "bg-card text-foreground hover:bg-muted"
-              }`}
+          {/* Search + Toggle Row */}
+          <div className="flex gap-2 items-center">
+            <div className="relative flex-1">
+              <Search className="absolute left-4 top-1/2 -translate-y-1/2 w-5 h-5 text-muted-foreground" />
+              <Input
+                type="text"
+                placeholder={t("Search menu...", "Menüde ara...")}
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                className="pl-12 bg-background border-border"
+              />
+            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setFiltersExpanded(!filtersExpanded)}
+              className="flex items-center gap-1 shrink-0"
             >
-              {t("All", "Tümü")}
-            </button>
-            {categories.map((cat) => (
-              <button
-                key={cat.id}
-                onClick={() => setActiveCategory(cat.id)}
-                className={`px-4 py-2 rounded-full font-medium text-sm transition-all ${
-                  activeCategory === cat.id
-                    ? "bg-primary text-primary-foreground"
-                    : "bg-card text-foreground hover:bg-muted"
-                }`}
-              >
-                {language === "en" ? cat.name : cat.name_tr || cat.name}
-              </button>
-            ))}
+              {t("Filters", "Filtreler")}
+              {filtersExpanded ? <ChevronUp className="w-4 h-4" /> : <ChevronDown className="w-4 h-4" />}
+            </Button>
           </div>
 
-          {/* Dietary Filters */}
-          <div className="flex flex-wrap gap-2 justify-center">
-            {dietaryFilters.map((filter) => (
-              <button
-                key={filter.id}
-                onClick={() => setDietaryFilter(dietaryFilter === filter.id ? null : filter.id)}
-                className={`flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium transition-all ${
-                  dietaryFilter === filter.id
-                    ? "bg-accent text-accent-foreground"
-                    : "bg-muted text-muted-foreground hover:bg-muted/80"
-                }`}
+          {/* Collapsible Filters */}
+          <AnimatePresence>
+            {filtersExpanded && (
+              <motion.div
+                initial={{ height: 0, opacity: 0 }}
+                animate={{ height: "auto", opacity: 1 }}
+                exit={{ height: 0, opacity: 0 }}
+                transition={{ duration: 0.2 }}
+                className="overflow-hidden"
               >
-                <filter.icon className="w-3 h-3" />
-                {filter.label}
-              </button>
-            ))}
-          </div>
+                {/* Category Tabs */}
+                <div className="flex flex-wrap gap-2 justify-center mt-4 mb-3">
+                  <button
+                    onClick={() => setActiveCategory(null)}
+                    className={`px-4 py-2 rounded-full font-medium text-sm transition-all ${
+                      activeCategory === null
+                        ? "bg-primary text-primary-foreground"
+                        : "bg-card text-foreground hover:bg-muted"
+                    }`}
+                  >
+                    {t("All", "Tümü")}
+                  </button>
+                  {categories.map((cat) => (
+                    <button
+                      key={cat.id}
+                      onClick={() => setActiveCategory(cat.id)}
+                      className={`px-4 py-2 rounded-full font-medium text-sm transition-all ${
+                        activeCategory === cat.id
+                          ? "bg-primary text-primary-foreground"
+                          : "bg-card text-foreground hover:bg-muted"
+                      }`}
+                    >
+                      {language === "en" ? cat.name : cat.name_tr || cat.name}
+                    </button>
+                  ))}
+                </div>
+
+                {/* Dietary Filters */}
+                <div className="flex flex-wrap gap-2 justify-center">
+                  {dietaryFilters.map((filter) => (
+                    <button
+                      key={filter.id}
+                      onClick={() => setDietaryFilter(dietaryFilter === filter.id ? null : filter.id)}
+                      className={`flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium transition-all ${
+                        dietaryFilter === filter.id
+                          ? "bg-accent text-accent-foreground"
+                          : "bg-muted text-muted-foreground hover:bg-muted/80"
+                      }`}
+                    >
+                      <filter.icon className="w-3 h-3" />
+                      {filter.label}
+                    </button>
+                  ))}
+                </div>
+              </motion.div>
+            )}
+          </AnimatePresence>
         </div>
       </section>
 
