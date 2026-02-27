@@ -4,6 +4,7 @@ import { Flame, Leaf, Wheat, Search, ChevronUp, ChevronDown } from "lucide-react
 import Layout from "@/components/layout/Layout";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { supabase } from "@/integrations/supabase/client";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -42,6 +43,7 @@ const Menu = () => {
   const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [filtersExpanded, setFiltersExpanded] = useState(false);
+  const isMobile = useIsMobile();
 
   useEffect(() => {
     fetchData();
@@ -50,8 +52,12 @@ const Menu = () => {
   const fetchData = async () => {
     try {
       const [itemsRes, categoriesRes] = await Promise.all([
-        supabase.from("menu_items").select("*").eq("is_available", true).order("sort_order"),
-        supabase.from("menu_categories").select("*").eq("is_active", true).order("sort_order"),
+        supabase
+          .from("menu_items")
+          .select("id,name,name_tr,description,description_tr,price,image_url,category_id,is_vegetarian,is_vegan,is_spicy,is_gluten_free")
+          .eq("is_available", true)
+          .order("sort_order"),
+        supabase.from("menu_categories").select("id,name,name_tr").eq("is_active", true).order("sort_order"),
       ]);
 
       if (itemsRes.data && itemsRes.data.length > 0) {
@@ -246,16 +252,16 @@ const Menu = () => {
               {filteredItems.map((item, index) => (
                 <motion.div
                   key={item.id}
-                  initial={{ opacity: 0, y: 20 }}
+                  initial={isMobile ? false : { opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: Math.min(index * 0.03, 0.5) }}
+                  transition={{ delay: isMobile ? 0 : Math.min(index * 0.03, 0.5) }}
                   onClick={(e) => { e.stopPropagation(); handleItemClick(item); }}
                   className="group bg-card rounded-2xl overflow-hidden shadow-lg hover-lift cursor-pointer"
                 >
                   {/* Image */}
                   <div className="relative h-56 overflow-hidden">
                     <img
-                      src={optimizeImageUrl(item.image_url, 640)}
+                      src={optimizeImageUrl(item.image_url, isMobile ? 384 : 640)}
                       alt={language === "en" ? item.name : item.name_tr || item.name}
                       className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                       loading="lazy"
@@ -331,7 +337,7 @@ const Menu = () => {
           description: selectedItem.description || undefined,
           descriptionTr: selectedItem.description_tr || undefined,
           price: selectedItem.price,
-          image: optimizeImageUrl(selectedItem.image_url, 1024),
+          image: optimizeImageUrl(selectedItem.image_url, isMobile ? 640 : 1024),
           isVegetarian: selectedItem.is_vegetarian || undefined,
           isVegan: selectedItem.is_vegan || undefined,
           isSpicy: selectedItem.is_spicy || undefined,
