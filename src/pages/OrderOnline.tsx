@@ -92,7 +92,7 @@ const OrderOnline = () => {
           .select("id, name, name_tr, slug")
           .eq("slug", branchSlug)
           .eq("is_active", true)
-          .single();
+          .maybeSingle();
         branchData = data;
         setBranch(data);
         if (data) {

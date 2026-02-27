@@ -50,6 +50,7 @@ const BranchOrders = () => {
   const [orderItems, setOrderItems] = useState<Record<string, OrderItem[]>>({});
   const [loading, setLoading] = useState(true);
   const [statusFilter, setStatusFilter] = useState("all");
+  const [dateFilter, setDateFilter] = useState("today");
   const [searchQuery, setSearchQuery] = useState("");
   const [selectedOrder, setSelectedOrder] = useState<Order | null>(null);
   const [isDetailOpen, setIsDetailOpen] = useState(false);
@@ -119,9 +120,13 @@ const BranchOrders = () => {
       const searchMatch = !searchQuery || 
         order.customer_name.toLowerCase().includes(searchQuery.toLowerCase()) ||
         order.order_number.toString().includes(searchQuery);
-      return statusMatch && searchMatch && isToday(new Date(order.created_at));
+      const orderDate = new Date(order.created_at);
+      const dateMatch = dateFilter === "all" || 
+        (dateFilter === "today" && isToday(orderDate)) ||
+        (dateFilter === "active" && ["new", "accepted", "in_progress", "ready"].includes(order.status));
+      return statusMatch && searchMatch && dateMatch;
     });
-  }, [orders, statusFilter, searchQuery]);
+  }, [orders, statusFilter, searchQuery, dateFilter]);
 
   const getNextStatus = (status: string) => {
     const flow: Record<string, string> = { new: "accepted", accepted: "in_progress", in_progress: "ready", ready: "completed" };
@@ -154,6 +159,14 @@ const BranchOrders = () => {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
           <Input placeholder={t("Search orders...", "Sipariş ara...")} value={searchQuery} onChange={(e) => setSearchQuery(e.target.value)} className="pl-9" />
         </div>
+        <Select value={dateFilter} onValueChange={setDateFilter}>
+          <SelectTrigger className="w-[160px]"><SelectValue /></SelectTrigger>
+          <SelectContent>
+            <SelectItem value="today">{t("Today", "Bugün")}</SelectItem>
+            <SelectItem value="active">{t("Active", "Aktif")}</SelectItem>
+            <SelectItem value="all">{t("All Orders", "Tüm Siparişler")}</SelectItem>
+          </SelectContent>
+        </Select>
         <Select value={statusFilter} onValueChange={setStatusFilter}>
           <SelectTrigger className="w-[180px]"><SelectValue /></SelectTrigger>
           <SelectContent>
