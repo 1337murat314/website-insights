@@ -1,4 +1,4 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useEffect, useMemo, useRef } from "react";
 import { useSearchParams } from "react-router-dom";
 import { motion, AnimatePresence } from "framer-motion";
 import { Flame, Leaf, Wheat, Search, UtensilsCrossed, MapPin, ChevronUp, ChevronDown } from "lucide-react";
@@ -62,22 +62,26 @@ const OrderOnline = () => {
   const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [filtersExpanded, setFiltersExpanded] = useState(false);
+  const lastFetchedBranchSlugRef = useRef<string | null>(null);
+
   // URL params always win over persisted cart context values
   const urlTableParam = searchParams.get("table")?.trim() || null;
   const urlBranchParam = searchParams.get("branch")?.trim().toLowerCase() || null;
   const effectiveBranchSlug = urlBranchParam || branchSlug;
 
   useEffect(() => {
-    if (urlTableParam) {
+    if (urlTableParam && urlTableParam !== tableNumber) {
       setTableNumber(urlTableParam);
     }
 
-    if (urlBranchParam) {
+    if (urlBranchParam && urlBranchParam !== branchSlug) {
       setBranchSlug(urlBranchParam);
     }
-  }, [urlTableParam, urlBranchParam, setTableNumber, setBranchSlug]);
+  }, [urlTableParam, urlBranchParam, tableNumber, branchSlug, setTableNumber, setBranchSlug]);
 
   useEffect(() => {
+    if (lastFetchedBranchSlugRef.current === effectiveBranchSlug) return;
+    lastFetchedBranchSlugRef.current = effectiveBranchSlug;
     fetchData(effectiveBranchSlug);
   }, [effectiveBranchSlug]);
 
@@ -181,6 +185,17 @@ const OrderOnline = () => {
     { id: "spicy", label: t("Spicy", "Acılı"), icon: Flame },
     { id: "gluten-free", label: t("Gluten-Free", "Glutensiz"), icon: Wheat },
   ];
+
+  const optimizeImageUrl = (imageUrl: string | null | undefined, width = 640) => {
+    if (!imageUrl) return "/placeholder.svg";
+
+    if (imageUrl.includes("/storage/v1/object/public/")) {
+      const transformed = imageUrl.replace("/storage/v1/object/public/", "/storage/v1/render/image/public/");
+      return `${transformed}?width=${width}&quality=70&resize=cover`;
+    }
+
+    return imageUrl;
+  };
 
   const handleItemClick = (item: MenuItem) => {
     setSelectedItem(item);
@@ -393,10 +408,15 @@ const OrderOnline = () => {
                     {/* Image */}
                     <div className="relative h-56 overflow-hidden">
                       <img
-                        src={item.image_url || "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400"}
+                        src={optimizeImageUrl(item.image_url, 640)}
                         alt={language === "en" ? item.name : item.name_tr || item.name}
                         className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                         loading="lazy"
+                        decoding="async"
+                        onError={(e) => {
+                          e.currentTarget.onerror = null;
+                          e.currentTarget.src = "/placeholder.svg";
+                        }}
                       />
                       <div className="absolute top-4 right-4 flex flex-wrap gap-2">
                         {item.is_vegetarian && (
@@ -459,7 +479,7 @@ const OrderOnline = () => {
           description: selectedItem.description || undefined,
           descriptionTr: selectedItem.description_tr || undefined,
           price: getItemPrice(selectedItem),
-          image: selectedItem.image_url || undefined,
+          image: optimizeImageUrl(selectedItem.image_url, 1024),
           isVegetarian: selectedItem.is_vegetarian || undefined,
           isVegan: selectedItem.is_vegan || undefined,
           isSpicy: selectedItem.is_spicy || undefined,
