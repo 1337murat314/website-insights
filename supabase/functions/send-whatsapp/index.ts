@@ -1,4 +1,5 @@
 import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
+import { createClient } from "https://esm.sh/@supabase/supabase-js@2.86.0";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -146,8 +147,35 @@ const handler = async (req: Request): Promise<Response> => {
       );
     }
 
-    const instanceId = Deno.env.get("GREEN_API_INSTANCE_ID");
-    const apiToken = Deno.env.get("GREEN_API_TOKEN");
+    // Try to get credentials from database first, fallback to env vars
+    let instanceId = Deno.env.get("GREEN_API_INSTANCE_ID");
+    let apiToken = Deno.env.get("GREEN_API_TOKEN");
+
+    try {
+      const supabaseUrl = Deno.env.get("SUPABASE_URL") || "";
+      const supabaseKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+      if (supabaseUrl && supabaseKey) {
+        const supabaseAdmin = createClient(supabaseUrl, supabaseKey);
+        const { data: dbSettings } = await supabaseAdmin
+          .from("restaurant_settings")
+          .select("setting_key, setting_value")
+          .in("setting_key", ["green_api_instance_id", "green_api_token"]);
+
+        if (dbSettings && dbSettings.length > 0) {
+          for (const row of dbSettings) {
+            const val = typeof row.setting_value === "object" && row.setting_value !== null
+              ? (row.setting_value as any).value
+              : row.setting_value;
+            if (val) {
+              if (row.setting_key === "green_api_instance_id") instanceId = String(val);
+              if (row.setting_key === "green_api_token") apiToken = String(val);
+            }
+          }
+        }
+      }
+    } catch (dbErr) {
+      console.log("Could not read DB settings, using env vars:", dbErr);
+    }
 
     if (!instanceId || !apiToken) {
       throw new Error("Green API credentials not configured");

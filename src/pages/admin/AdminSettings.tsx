@@ -10,7 +10,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { supabase } from "@/integrations/supabase/client";
 import { useToast } from "@/hooks/use-toast";
 import { useAuth } from "@/contexts/AuthContext";
-import { Settings, Bell, Clock, Globe, User, Save } from "lucide-react";
+import { Settings, Bell, Clock, Globe, User, Save, MessageSquare, Eye, EyeOff, Shield } from "lucide-react";
 
 interface RestaurantSettings {
   [key: string]: string | number | boolean | undefined;
@@ -23,6 +23,8 @@ interface RestaurantSettings {
   max_party_size?: number;
   reservation_notice_hours?: number;
   auto_confirm_reservations?: boolean;
+  green_api_instance_id?: string;
+  green_api_token?: string;
 }
 
 const AdminSettings = () => {
@@ -40,6 +42,9 @@ const AdminSettings = () => {
   const [profile, setProfile] = useState({ full_name: "", phone: "" });
   const [isLoading, setIsLoading] = useState(true);
   const [isSaving, setIsSaving] = useState(false);
+  const [showToken, setShowToken] = useState(false);
+  const [showInstanceId, setShowInstanceId] = useState(false);
+  const [isSavingIntegration, setIsSavingIntegration] = useState(false);
   const { toast } = useToast();
   const { user } = useAuth();
 
@@ -125,6 +130,7 @@ const AdminSettings = () => {
         <TabsList>
           <TabsTrigger value="general"><Settings className="h-4 w-4 mr-2" />General</TabsTrigger>
           <TabsTrigger value="reservations"><Clock className="h-4 w-4 mr-2" />Reservations</TabsTrigger>
+          <TabsTrigger value="integrations"><MessageSquare className="h-4 w-4 mr-2" />WhatsApp</TabsTrigger>
           <TabsTrigger value="profile"><User className="h-4 w-4 mr-2" />Profile</TabsTrigger>
         </TabsList>
 
@@ -251,6 +257,80 @@ const AdminSettings = () => {
               <Button onClick={saveAllSettings} disabled={isSaving}>
                 <Save className="h-4 w-4 mr-2" />
                 {isSaving ? "Saving..." : "Save Settings"}
+              </Button>
+            </div>
+          </motion.div>
+        </TabsContent>
+
+        <TabsContent value="integrations" className="space-y-4">
+          <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }}>
+            <Card className="border-border/50">
+              <CardHeader>
+                <CardTitle className="flex items-center gap-2">
+                  <MessageSquare className="h-5 w-5 text-green-500" />
+                  WhatsApp Integration (Green API)
+                </CardTitle>
+                <CardDescription>
+                  Configure Green API credentials for WhatsApp reservation confirmations. Get your credentials from{" "}
+                  <a href="https://green-api.com" target="_blank" rel="noopener noreferrer" className="text-primary underline">
+                    green-api.com
+                  </a>
+                </CardDescription>
+              </CardHeader>
+              <CardContent className="space-y-4">
+                <div className="space-y-2">
+                  <Label>Instance ID</Label>
+                  <div className="relative">
+                    <Input
+                      type={showInstanceId ? "text" : "password"}
+                      value={settings.green_api_instance_id || ""}
+                      onChange={(e) => setSettings({ ...settings, green_api_instance_id: e.target.value })}
+                      placeholder="e.g. 1234567890"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 p-0"
+                      onClick={() => setShowInstanceId(!showInstanceId)}
+                    >
+                      {showInstanceId ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </Button>
+                  </div>
+                </div>
+                <div className="space-y-2">
+                  <Label>API Token</Label>
+                  <div className="relative">
+                    <Input
+                      type={showToken ? "text" : "password"}
+                      value={settings.green_api_token || ""}
+                      onChange={(e) => setSettings({ ...settings, green_api_token: e.target.value })}
+                      placeholder="Enter your Green API token"
+                    />
+                    <Button
+                      type="button"
+                      variant="ghost"
+                      size="sm"
+                      className="absolute right-1 top-1/2 -translate-y-1/2 h-7 w-7 p-0"
+                      onClick={() => setShowToken(!showToken)}
+                    >
+                      {showToken ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                    </Button>
+                  </div>
+                </div>
+                <div className="flex items-start gap-3 p-3 bg-muted rounded-lg">
+                  <Shield className="h-5 w-5 text-muted-foreground mt-0.5 shrink-0" />
+                  <p className="text-sm text-muted-foreground">
+                    Credentials are stored securely in your database settings. The WhatsApp notification system will use these values to send reservation confirmations.
+                  </p>
+                </div>
+              </CardContent>
+            </Card>
+
+            <div className="flex justify-end mt-4">
+              <Button onClick={saveAllSettings} disabled={isSaving}>
+                <Save className="h-4 w-4 mr-2" />
+                {isSaving ? "Saving..." : "Save WhatsApp Settings"}
               </Button>
             </div>
           </motion.div>
