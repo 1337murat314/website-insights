@@ -64,49 +64,52 @@ const OrderOnline = () => {
   const [filtersExpanded, setFiltersExpanded] = useState(false);
   const [initialized, setInitialized] = useState(false);
 
-  // Get table number and branch from URL params - set both at once before fetching
-  useEffect(() => {
-    const table = searchParams.get("table");
-    const branchParam = searchParams.get("branch");
-    
-    if (table) {
-      setTableNumber(table);
-    }
-    if (branchParam) {
-      setBranchSlug(branchParam);
-    }
-    // Mark as initialized so fetchData only runs once with the correct slug
-    setInitialized(true);
-  }, [searchParams, setTableNumber, setBranchSlug]);
+  // URL params always win over persisted cart context values
+  const urlTableParam = searchParams.get("table")?.trim() || null;
+  const urlBranchParam = searchParams.get("branch")?.trim().toLowerCase() || null;
+  const effectiveBranchSlug = urlBranchParam || branchSlug;
 
-  // Only fetch after URL params have been processed
+  useEffect(() => {
+    if (urlTableParam && urlTableParam !== tableNumber) {
+      setTableNumber(urlTableParam);
+    }
+
+    if (urlBranchParam && urlBranchParam !== branchSlug) {
+      setBranchSlug(urlBranchParam);
+    }
+
+    setInitialized(true);
+  }, [urlTableParam, urlBranchParam, tableNumber, branchSlug, setTableNumber, setBranchSlug]);
+
   useEffect(() => {
     if (initialized) {
       fetchData();
     }
-  }, [initialized, branchSlug]);
+  }, [initialized, effectiveBranchSlug]);
 
   const fetchData = async () => {
     setLoading(true);
     try {
       // Fetch branch if we have a slug
       let branchData: Branch | null = null;
-      if (branchSlug) {
+      if (effectiveBranchSlug) {
         const { data, error: branchError } = await supabase
           .from("branches")
           .select("id, name, name_tr, slug")
-          .eq("slug", branchSlug)
+          .eq("slug", effectiveBranchSlug)
           .eq("is_active", true)
           .maybeSingle();
-        
+
         if (branchError) {
           console.error("Error fetching branch:", branchError);
         }
+
         branchData = data;
         setBranch(data);
-        if (data) {
-          setBranchId(data.id);
-        }
+        setBranchId(data?.id ?? null);
+      } else {
+        setBranch(null);
+        setBranchId(null);
       }
 
       // Fetch menu items and categories in parallel
@@ -124,7 +127,7 @@ const OrderOnline = () => {
           .from("branch_menu_items")
           .select("menu_item_id, is_available, price_override")
           .eq("branch_id", branchData.id);
-        
+
         setBranchMenuItems(branchItems || []);
       } else {
         setBranchMenuItems([]);

@@ -38,51 +38,83 @@ interface CartContextType {
 
 const CartContext = createContext<CartContextType | undefined>(undefined);
 
+const safeStorage = {
+  get: (key: string): string | null => {
+    try {
+      return window.localStorage.getItem(key);
+    } catch {
+      return null;
+    }
+  },
+  set: (key: string, value: string) => {
+    try {
+      window.localStorage.setItem(key, value);
+    } catch {
+      // ignore storage errors (private mode / quota / restricted webview)
+    }
+  },
+  remove: (key: string) => {
+    try {
+      window.localStorage.removeItem(key);
+    } catch {
+      // ignore storage errors
+    }
+  },
+};
+
+const getInitialCart = (): CartItem[] => {
+  const saved = safeStorage.get("cart");
+  if (!saved) return [];
+  try {
+    const parsed = JSON.parse(saved);
+    return Array.isArray(parsed) ? parsed : [];
+  } catch {
+    return [];
+  }
+};
+
 // No tax
 
 export const CartProvider = ({ children }: { children: ReactNode }) => {
-  const [items, setItems] = useState<CartItem[]>(() => {
-    const saved = localStorage.getItem("cart");
-    return saved ? JSON.parse(saved) : [];
-  });
+  const [items, setItems] = useState<CartItem[]>(() => getInitialCart());
 
   const [tableNumber, setTableNumberState] = useState<string | null>(() => {
-    return localStorage.getItem("tableNumber");
+    return safeStorage.get("tableNumber");
   });
 
   const [branchSlug, setBranchSlugState] = useState<string | null>(() => {
-    return localStorage.getItem("branchSlug");
+    return safeStorage.get("branchSlug");
   });
 
   const [branchId, setBranchIdState] = useState<string | null>(() => {
-    return localStorage.getItem("branchId");
+    return safeStorage.get("branchId");
   });
 
   useEffect(() => {
-    localStorage.setItem("cart", JSON.stringify(items));
+    safeStorage.set("cart", JSON.stringify(items));
   }, [items]);
 
   useEffect(() => {
     if (tableNumber) {
-      localStorage.setItem("tableNumber", tableNumber);
+      safeStorage.set("tableNumber", tableNumber);
     } else {
-      localStorage.removeItem("tableNumber");
+      safeStorage.remove("tableNumber");
     }
   }, [tableNumber]);
 
   useEffect(() => {
     if (branchSlug) {
-      localStorage.setItem("branchSlug", branchSlug);
+      safeStorage.set("branchSlug", branchSlug);
     } else {
-      localStorage.removeItem("branchSlug");
+      safeStorage.remove("branchSlug");
     }
   }, [branchSlug]);
 
   useEffect(() => {
     if (branchId) {
-      localStorage.setItem("branchId", branchId);
+      safeStorage.set("branchId", branchId);
     } else {
-      localStorage.removeItem("branchId");
+      safeStorage.remove("branchId");
     }
   }, [branchId]);
 
@@ -122,9 +154,9 @@ export const CartProvider = ({ children }: { children: ReactNode }) => {
     setTableNumberState(null);
     setBranchSlugState(null);
     setBranchIdState(null);
-    localStorage.removeItem("tableNumber");
-    localStorage.removeItem("branchSlug");
-    localStorage.removeItem("branchId");
+    safeStorage.remove("tableNumber");
+    safeStorage.remove("branchSlug");
+    safeStorage.remove("branchId");
   };
 
   const getTotalItems = () => {
