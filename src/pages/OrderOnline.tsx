@@ -62,8 +62,9 @@ const OrderOnline = () => {
   const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [filtersExpanded, setFiltersExpanded] = useState(false);
+  const [initialized, setInitialized] = useState(false);
 
-  // Get table number and branch from URL params
+  // Get table number and branch from URL params - set both at once before fetching
   useEffect(() => {
     const table = searchParams.get("table");
     const branchParam = searchParams.get("branch");
@@ -74,25 +75,33 @@ const OrderOnline = () => {
     if (branchParam) {
       setBranchSlug(branchParam);
     }
+    // Mark as initialized so fetchData only runs once with the correct slug
+    setInitialized(true);
   }, [searchParams, setTableNumber, setBranchSlug]);
 
+  // Only fetch after URL params have been processed
   useEffect(() => {
-    fetchData();
-  }, [branchSlug]);
+    if (initialized) {
+      fetchData();
+    }
+  }, [initialized, branchSlug]);
 
   const fetchData = async () => {
+    setLoading(true);
     try {
-      setLoading(true);
-      
       // Fetch branch if we have a slug
       let branchData: Branch | null = null;
       if (branchSlug) {
-        const { data } = await supabase
+        const { data, error: branchError } = await supabase
           .from("branches")
           .select("id, name, name_tr, slug")
           .eq("slug", branchSlug)
           .eq("is_active", true)
           .maybeSingle();
+        
+        if (branchError) {
+          console.error("Error fetching branch:", branchError);
+        }
         branchData = data;
         setBranch(data);
         if (data) {
@@ -100,13 +109,14 @@ const OrderOnline = () => {
         }
       }
 
-      // Fetch menu items and categories
+      // Fetch menu items and categories in parallel
       const [itemsRes, categoriesRes] = await Promise.all([
         supabase.from("menu_items").select("*").eq("is_available", true).order("sort_order"),
         supabase.from("menu_categories").select("*").eq("is_active", true).order("sort_order"),
       ]);
 
       if (categoriesRes.data) setCategories(categoriesRes.data);
+      if (itemsRes.data) setMenuItems(itemsRes.data);
 
       // If we have a branch, fetch branch-specific menu items
       if (branchData) {
@@ -116,9 +126,9 @@ const OrderOnline = () => {
           .eq("branch_id", branchData.id);
         
         setBranchMenuItems(branchItems || []);
+      } else {
+        setBranchMenuItems([]);
       }
-
-      if (itemsRes.data) setMenuItems(itemsRes.data);
     } catch (error) {
       console.error("Error fetching menu:", error);
     } finally {
