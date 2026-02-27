@@ -9,7 +9,6 @@ import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
 import { Skeleton } from "@/components/ui/skeleton";
 import MenuItemModal from "@/components/order/MenuItemModal";
-import { MENU_CATEGORIES, MENU_ITEMS } from "@/lib/constants";
 
 interface MenuItem {
   id: string;
