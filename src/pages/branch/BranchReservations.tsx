@@ -48,7 +48,6 @@ const BranchReservations = () => {
   const [isCreateOpen, setIsCreateOpen] = useState(false);
   const [newReservation, setNewReservation] = useState({
     guest_name: "",
-    guest_email: "",
     guest_phone: "",
     party_size: 2,
     reservation_date: format(new Date(), "yyyy-MM-dd"),
@@ -102,7 +101,13 @@ const BranchReservations = () => {
   const createReservation = async () => {
     if (!branch) return;
     const { error } = await supabase.from("reservations").insert({
-      ...newReservation,
+      guest_name: newReservation.guest_name,
+      guest_email: "-",
+      guest_phone: newReservation.guest_phone || null,
+      party_size: newReservation.party_size,
+      reservation_date: newReservation.reservation_date,
+      reservation_time: newReservation.reservation_time,
+      special_requests: newReservation.special_requests || null,
       branch_id: branch.id,
       status: "confirmed" as const,
     });
@@ -114,7 +119,6 @@ const BranchReservations = () => {
       setIsCreateOpen(false);
       setNewReservation({
         guest_name: "",
-        guest_email: "",
         guest_phone: "",
         party_size: 2,
         reservation_date: format(new Date(), "yyyy-MM-dd"),
@@ -326,15 +330,11 @@ const BranchReservations = () => {
                 <Input value={newReservation.guest_name} onChange={(e) => setNewReservation({ ...newReservation, guest_name: e.target.value })} />
               </div>
               <div>
-                <Label>{t("Email", "E-posta")}</Label>
-                <Input type="email" value={newReservation.guest_email} onChange={(e) => setNewReservation({ ...newReservation, guest_email: e.target.value })} />
-              </div>
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <div>
                 <Label>{t("Phone", "Telefon")}</Label>
                 <Input value={newReservation.guest_phone} onChange={(e) => setNewReservation({ ...newReservation, guest_phone: e.target.value })} />
               </div>
+            </div>
+            <div className="grid grid-cols-2 gap-4">
               <div>
                 <Label>{t("Party Size", "Kişi Sayısı")}</Label>
                 <Input type="number" min={1} value={newReservation.party_size} onChange={(e) => setNewReservation({ ...newReservation, party_size: parseInt(e.target.value) || 1 })} />
