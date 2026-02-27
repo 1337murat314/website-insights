@@ -30,9 +30,16 @@ import {
   History,
   RefreshCw,
   UserCheck,
-  AlertCircle
+  AlertCircle,
+  MapPin
 } from "lucide-react";
 import { format, isToday, isFuture, isPast, parseISO, startOfDay } from "date-fns";
+
+interface Branch {
+  id: string;
+  name: string;
+  name_tr: string | null;
+}
 
 interface Reservation {
   id: string;
@@ -46,10 +53,12 @@ interface Reservation {
   special_requests: string | null;
   notes: string | null;
   created_at: string;
+  branch_id: string | null;
+  branches?: Branch | null;
 }
 
 const AdminReservations = () => {
-  const { t } = useLanguage();
+  const { language, t } = useLanguage();
   const [reservations, setReservations] = useState<Reservation[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState("");
@@ -59,24 +68,36 @@ const AdminReservations = () => {
   const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false);
   const [editNotes, setEditNotes] = useState("");
+  const [branchFilter, setBranchFilter] = useState<string>("all");
+  const [branches, setBranches] = useState<Branch[]>([]);
   const { toast } = useToast();
 
   useEffect(() => {
     fetchReservations();
+    fetchBranches();
   }, []);
+
+  const fetchBranches = async () => {
+    const { data } = await supabase
+      .from("branches")
+      .select("id, name, name_tr")
+      .eq("is_active", true)
+      .order("sort_order", { ascending: true });
+    setBranches(data || []);
+  };
 
   const fetchReservations = async () => {
     setIsLoading(true);
     const { data, error } = await supabase
       .from("reservations")
-      .select("*")
+      .select("*, branches(id, name, name_tr)")
       .order("reservation_date", { ascending: true })
       .order("reservation_time", { ascending: true });
 
     if (error) {
       toast({ title: "Error", description: "Failed to fetch reservations", variant: "destructive" });
     } else {
-      setReservations(data || []);
+      setReservations((data as any) || []);
     }
     setIsLoading(false);
   };
@@ -103,7 +124,18 @@ const AdminReservations = () => {
       filtered = filtered.filter(r => r.status === statusFilter);
     }
 
+    if (branchFilter !== "all") {
+      filtered = filtered.filter(r => r.branch_id === branchFilter);
+    }
+
     return filtered;
+  };
+
+  const getBranchName = (reservation: Reservation) => {
+    if (reservation.branches) {
+      return language === "tr" ? reservation.branches.name_tr || reservation.branches.name : reservation.branches.name;
+    }
+    return t("No Branch", "Şube Yok");
   };
 
   const getActiveList = () => {
@@ -207,6 +239,10 @@ const AdminReservations = () => {
               <div className="flex items-center gap-2 mb-2">
                 <h3 className="font-semibold">{reservation.guest_name}</h3>
                 {getStatusBadge(reservation.status)}
+                <Badge variant="outline" className="text-xs">
+                  <MapPin className="h-3 w-3 mr-1" />
+                  {getBranchName(reservation)}
+                </Badge>
               </div>
               <div className="flex flex-wrap gap-4 text-sm text-muted-foreground">
                 <span className="flex items-center gap-1">
@@ -449,6 +485,20 @@ const AdminReservations = () => {
                   <SelectItem value="no_show">{t("No Show", "Gelmedi")}</SelectItem>
                 </SelectContent>
               </Select>
+              <Select value={branchFilter} onValueChange={setBranchFilter}>
+                <SelectTrigger className="w-full sm:w-48">
+                  <MapPin className="h-4 w-4 mr-2" />
+                  <SelectValue placeholder={t("Filter by branch", "Şubeye göre filtrele")} />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">{t("All Branches", "Tüm Şubeler")}</SelectItem>
+                  {branches.map((branch) => (
+                    <SelectItem key={branch.id} value={branch.id}>
+                      {language === "tr" ? branch.name_tr || branch.name : branch.name}
+                    </SelectItem>
+                  ))}
+                </SelectContent>
+              </Select>
             </div>
           </CardContent>
         </Card>
@@ -498,6 +548,10 @@ const AdminReservations = () => {
                 <div>
                   <Label className="text-muted-foreground">{t("Status", "Durum")}</Label>
                   <p>{getStatusBadge(selectedReservation.status)}</p>
+                </div>
+                <div>
+                  <Label className="text-muted-foreground">{t("Branch", "Şube")}</Label>
+                  <p className="font-medium">{getBranchName(selectedReservation)}</p>
                 </div>
                 <div>
                   <Label className="text-muted-foreground">{t("Email", "E-posta")}</Label>
