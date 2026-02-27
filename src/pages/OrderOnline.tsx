@@ -320,7 +320,7 @@ const OrderOnline = () => {
                 {/* Category Tabs */}
                 <div className="flex flex-wrap gap-2 justify-center mt-4 mb-3">
                   <button
-                    onClick={() => setActiveCategory(null)}
+                    onClick={() => { setActiveCategory(null); setFiltersExpanded(false); }}
                     className={`px-4 py-2 rounded-full font-medium text-sm transition-all ${
                       activeCategory === null
                         ? "bg-primary text-primary-foreground"
@@ -332,7 +332,7 @@ const OrderOnline = () => {
                   {categories.map((cat) => (
                     <button
                       key={cat.id}
-                      onClick={() => setActiveCategory(cat.id)}
+                      onClick={() => { setActiveCategory(cat.id); setFiltersExpanded(false); }}
                       className={`px-4 py-2 rounded-full font-medium text-sm transition-all ${
                         activeCategory === cat.id
                           ? "bg-primary text-primary-foreground"
@@ -349,7 +349,7 @@ const OrderOnline = () => {
                   {dietaryFilters.map((filter) => (
                     <button
                       key={filter.id}
-                      onClick={() => setDietaryFilter(dietaryFilter === filter.id ? null : filter.id)}
+                      onClick={() => { setDietaryFilter(dietaryFilter === filter.id ? null : filter.id); setFiltersExpanded(false); }}
                       className={`flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium transition-all ${
                         dietaryFilter === filter.id
                           ? "bg-accent text-accent-foreground"
