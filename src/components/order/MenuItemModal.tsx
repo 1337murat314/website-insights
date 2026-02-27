@@ -65,18 +65,17 @@ const MenuItemModal = ({ item, isOpen, onClose }: MenuItemModalProps) => {
             initial={{ opacity: 0 }}
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
-            className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50"
+            className="fixed inset-0 bg-black/80 backdrop-blur-sm z-50 flex items-center justify-center p-4"
             onClick={onClose}
-          />
-          
-          {/* Modal */}
-          <motion.div
-            initial={{ opacity: 0, scale: 0.95, y: 20 }}
-            animate={{ opacity: 1, scale: 1, y: 0 }}
-            exit={{ opacity: 0, scale: 0.95, y: 20 }}
-            onClick={(e) => e.stopPropagation()}
-            className="fixed inset-4 md:inset-auto md:left-1/2 md:top-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:max-w-2xl md:w-full bg-card rounded-2xl overflow-hidden z-50 max-h-[90vh] flex flex-col"
           >
+            {/* Modal */}
+            <motion.div
+              initial={{ opacity: 0, scale: 0.95 }}
+              animate={{ opacity: 1, scale: 1 }}
+              exit={{ opacity: 0, scale: 0.95 }}
+              onClick={(e) => e.stopPropagation()}
+              className="w-full max-w-2xl bg-card rounded-2xl overflow-hidden max-h-[90vh] flex flex-col"
+            >
             {/* Close Button */}
             <button
               onClick={onClose}
@@ -185,6 +184,7 @@ const MenuItemModal = ({ item, isOpen, onClose }: MenuItemModalProps) => {
                 {t("Add to Cart", "Sepete Ekle")} - ₺{totalPrice.toFixed(2)}
               </Button>
             </div>
+            </motion.div>
           </motion.div>
         </>
       )}
