@@ -93,6 +93,17 @@ const Menu = () => {
     { id: "gluten-free", label: t("Gluten-Free", "Glutensiz"), icon: Wheat },
   ];
 
+  const optimizeImageUrl = (imageUrl: string | null | undefined, width = 640) => {
+    if (!imageUrl) return "/placeholder.svg";
+
+    if (imageUrl.includes("/storage/v1/object/public/")) {
+      const transformed = imageUrl.replace("/storage/v1/object/public/", "/storage/v1/render/image/public/");
+      return `${transformed}?width=${width}&quality=70&resize=cover`;
+    }
+
+    return imageUrl;
+  };
+
   const handleItemClick = (item: MenuItem) => {
     setSelectedItem(item);
     setIsModalOpen(true);
@@ -167,7 +178,7 @@ const Menu = () => {
                 {/* Category Tabs */}
                 <div className="flex flex-wrap gap-2 justify-center mt-4 mb-3">
                   <button
-                    onClick={() => setActiveCategory(null)}
+                    onClick={() => { setActiveCategory(null); setFiltersExpanded(false); }}
                     className={`px-4 py-2 rounded-full font-medium text-sm transition-all ${
                       activeCategory === null
                         ? "bg-primary text-primary-foreground"
@@ -179,7 +190,7 @@ const Menu = () => {
                   {displayCategories.map((cat) => (
                     <button
                       key={cat.id}
-                      onClick={() => setActiveCategory(cat.id)}
+                      onClick={() => { setActiveCategory(cat.id); setFiltersExpanded(false); }}
                       className={`px-4 py-2 rounded-full font-medium text-sm transition-all ${
                         activeCategory === cat.id
                           ? "bg-primary text-primary-foreground"
@@ -196,7 +207,7 @@ const Menu = () => {
                   {dietaryFilters.map((filter) => (
                     <button
                       key={filter.id}
-                      onClick={() => setDietaryFilter(dietaryFilter === filter.id ? null : filter.id)}
+                      onClick={() => { setDietaryFilter(dietaryFilter === filter.id ? null : filter.id); setFiltersExpanded(false); }}
                       className={`flex items-center gap-1 px-3 py-1 rounded-full text-xs font-medium transition-all ${
                         dietaryFilter === filter.id
                           ? "bg-accent text-accent-foreground"
@@ -244,10 +255,15 @@ const Menu = () => {
                   {/* Image */}
                   <div className="relative h-56 overflow-hidden">
                     <img
-                      src={item.image_url || "https://images.unsplash.com/photo-1546069901-ba9599a7e63c?w=400"}
+                      src={optimizeImageUrl(item.image_url, 640)}
                       alt={language === "en" ? item.name : item.name_tr || item.name}
                       className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                       loading="lazy"
+                      decoding="async"
+                      onError={(e) => {
+                        e.currentTarget.onerror = null;
+                        e.currentTarget.src = "/placeholder.svg";
+                      }}
                     />
                     <div className="absolute top-4 right-4 flex gap-2">
                       {item.is_vegetarian && (
@@ -315,7 +331,7 @@ const Menu = () => {
           description: selectedItem.description || undefined,
           descriptionTr: selectedItem.description_tr || undefined,
           price: selectedItem.price,
-          image: selectedItem.image_url || undefined,
+          image: optimizeImageUrl(selectedItem.image_url, 1024),
           isVegetarian: selectedItem.is_vegetarian || undefined,
           isVegan: selectedItem.is_vegan || undefined,
           isSpicy: selectedItem.is_spicy || undefined,
