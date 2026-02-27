@@ -62,41 +62,35 @@ const OrderOnline = () => {
   const [selectedItem, setSelectedItem] = useState<MenuItem | null>(null);
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [filtersExpanded, setFiltersExpanded] = useState(false);
-  const [initialized, setInitialized] = useState(false);
-
   // URL params always win over persisted cart context values
   const urlTableParam = searchParams.get("table")?.trim() || null;
   const urlBranchParam = searchParams.get("branch")?.trim().toLowerCase() || null;
   const effectiveBranchSlug = urlBranchParam || branchSlug;
 
   useEffect(() => {
-    if (urlTableParam && urlTableParam !== tableNumber) {
+    if (urlTableParam) {
       setTableNumber(urlTableParam);
     }
 
-    if (urlBranchParam && urlBranchParam !== branchSlug) {
+    if (urlBranchParam) {
       setBranchSlug(urlBranchParam);
     }
-
-    setInitialized(true);
-  }, [urlTableParam, urlBranchParam, tableNumber, branchSlug, setTableNumber, setBranchSlug]);
+  }, [urlTableParam, urlBranchParam, setTableNumber, setBranchSlug]);
 
   useEffect(() => {
-    if (initialized) {
-      fetchData();
-    }
-  }, [initialized, effectiveBranchSlug]);
+    fetchData(effectiveBranchSlug);
+  }, [effectiveBranchSlug]);
 
-  const fetchData = async () => {
+  const fetchData = async (activeBranchSlug: string | null) => {
     setLoading(true);
     try {
       // Fetch branch if we have a slug
       let branchData: Branch | null = null;
-      if (effectiveBranchSlug) {
+      if (activeBranchSlug) {
         const { data, error: branchError } = await supabase
           .from("branches")
           .select("id, name, name_tr, slug")
-          .eq("slug", effectiveBranchSlug)
+          .eq("slug", activeBranchSlug)
           .eq("is_active", true)
           .maybeSingle();
 
