@@ -274,7 +274,7 @@ export default function CateringQuoteModal({ open, onOpenChange }: CateringQuote
 
   return (
     <Dialog open={open} onOpenChange={onOpenChange}>
-      <DialogContent className="max-w-4xl h-[90vh] sm:h-auto sm:max-h-[90vh] p-0 overflow-hidden flex flex-col">
+      <DialogContent className="max-w-4xl h-[90vh] p-0 overflow-hidden flex flex-col">
         <DialogHeader className="p-4 sm:p-6 pb-2 sm:pb-0 flex-shrink-0">
           <DialogTitle className="text-xl sm:text-2xl font-serif">
             {step === "products"
@@ -338,10 +338,16 @@ export default function CateringQuoteModal({ open, onOpenChange }: CateringQuote
                                 <div className="flex items-center justify-between sm:justify-end gap-2 sm:gap-3">
                                   <div className="flex items-center gap-1 sm:gap-2">
                                     <Button
+                                      type="button"
                                       variant="outline"
                                       size="icon"
                                       className="h-8 w-8 sm:h-8 sm:w-8"
-                                      onClick={() => updateQuantity(product, -1)}
+                                      onPointerDown={(e) => e.preventDefault()}
+                                      onClick={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        updateQuantity(product, -1);
+                                      }}
                                       disabled={quantity === 0}
                                     >
                                       <Minus className="h-4 w-4" />
@@ -355,10 +361,16 @@ export default function CateringQuoteModal({ open, onOpenChange }: CateringQuote
                                       min={0}
                                     />
                                     <Button
+                                      type="button"
                                       variant="outline"
                                       size="icon"
                                       className="h-8 w-8 sm:h-8 sm:w-8"
-                                      onClick={() => updateQuantity(product, 1)}
+                                      onPointerDown={(e) => e.preventDefault()}
+                                      onClick={(e) => {
+                                        e.preventDefault();
+                                        e.stopPropagation();
+                                        updateQuantity(product, 1);
+                                      }}
                                     >
                                       <Plus className="h-4 w-4" />
                                     </Button>
