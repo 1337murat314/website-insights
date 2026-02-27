@@ -199,9 +199,18 @@ const OrderOnline = () => {
   const optimizeImageUrl = (imageUrl: string | null | undefined, width = 640) => {
     if (!imageUrl) return "/placeholder.svg";
 
+    // Use public URL directly - the render/image transform endpoint may not exist
+    // or may fail for certain image types causing broken images
     if (imageUrl.includes("/storage/v1/object/public/")) {
-      const transformed = imageUrl.replace("/storage/v1/object/public/", "/storage/v1/render/image/public/");
-      return `${transformed}?width=${width}&quality=70&resize=cover`;
+      // Add width param via Supabase image transformation if supported
+      try {
+        const url = new URL(imageUrl);
+        url.searchParams.set("width", String(width));
+        url.searchParams.set("quality", "75");
+        return url.toString();
+      } catch {
+        return imageUrl;
+      }
     }
 
     return imageUrl;

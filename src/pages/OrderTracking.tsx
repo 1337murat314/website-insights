@@ -168,45 +168,60 @@ const OrderTracking = () => {
   useEffect(() => {
     fetchTableOrders();
 
-    // Subscribe to realtime updates - only if we have valid verification
-    if (tableNumber && verificationCode) {
-      const ordersChannel = supabase
-        .channel(`table-orders-${tableNumber}-${verificationCode}`)
-        .on(
-          "postgres_changes",
-          { 
-            event: "*", 
-            schema: "public", 
-            table: "orders",
-            filter: `table_number=eq.${tableNumber}`
-          },
-          () => {
-            fetchTableOrders();
-          }
-        )
-        .subscribe();
+    if (!tableNumber || !verificationCode) return;
 
-      const requestsChannel = supabase
-        .channel(`table-requests-${tableNumber}-${verificationCode}`)
-        .on(
-          "postgres_changes",
-          { 
-            event: "*", 
-            schema: "public", 
-            table: "service_requests",
-            filter: `table_number=eq.${tableNumber}`
-          },
-          () => {
-            fetchTableOrders();
-          }
-        )
-        .subscribe();
+    // Realtime subscription
+    const ordersChannel = supabase
+      .channel(`table-orders-${tableNumber}-${verificationCode}`)
+      .on(
+        "postgres_changes",
+        { 
+          event: "*", 
+          schema: "public", 
+          table: "orders",
+          filter: `table_number=eq.${tableNumber}`
+        },
+        () => {
+          fetchTableOrders();
+        }
+      )
+      .subscribe();
 
-      return () => {
-        supabase.removeChannel(ordersChannel);
-        supabase.removeChannel(requestsChannel);
-      };
-    }
+    const requestsChannel = supabase
+      .channel(`table-requests-${tableNumber}-${verificationCode}`)
+      .on(
+        "postgres_changes",
+        { 
+          event: "*", 
+          schema: "public", 
+          table: "service_requests",
+          filter: `table_number=eq.${tableNumber}`
+        },
+        () => {
+          fetchTableOrders();
+        }
+      )
+      .subscribe();
+
+    // Polling fallback every 10s for mobile reliability
+    const pollInterval = setInterval(() => {
+      fetchTableOrders();
+    }, 10000);
+
+    // Also refresh on tab focus (mobile browser returns from background)
+    const handleVisibility = () => {
+      if (document.visibilityState === "visible") {
+        fetchTableOrders();
+      }
+    };
+    document.addEventListener("visibilitychange", handleVisibility);
+
+    return () => {
+      supabase.removeChannel(ordersChannel);
+      supabase.removeChannel(requestsChannel);
+      clearInterval(pollInterval);
+      document.removeEventListener("visibilitychange", handleVisibility);
+    };
   }, [tableNumber, verificationCode]);
 
   const sendServiceRequest = async (requestType: "call_waiter" | "request_bill") => {
