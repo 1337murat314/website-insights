@@ -74,6 +74,7 @@ const MenuItemModal = ({ item, isOpen, onClose }: MenuItemModalProps) => {
             initial={{ opacity: 0, scale: 0.95, y: 20 }}
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.95, y: 20 }}
+            onClick={(e) => e.stopPropagation()}
             className="fixed inset-4 md:inset-auto md:left-1/2 md:top-1/2 md:-translate-x-1/2 md:-translate-y-1/2 md:max-w-2xl md:w-full bg-card rounded-2xl overflow-hidden z-50 max-h-[90vh] flex flex-col"
           >
             {/* Close Button */}
