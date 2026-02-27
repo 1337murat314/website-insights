@@ -237,7 +237,7 @@ const Menu = () => {
                   key={item.id}
                   initial={{ opacity: 0, y: 20 }}
                   animate={{ opacity: 1, y: 0 }}
-                  transition={{ delay: index * 0.05 }}
+                  transition={{ delay: Math.min(index * 0.03, 0.5) }}
                   onClick={() => handleItemClick(item)}
                   className="group bg-card rounded-2xl overflow-hidden shadow-lg hover-lift cursor-pointer"
                 >

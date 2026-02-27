@@ -1,4 +1,4 @@
-import { useState, useCallback } from "react";
+import { useState, useCallback, useId } from "react";
 import { supabase } from "@/integrations/supabase/client";
 import { toast } from "sonner";
 import { Upload, X, Image as ImageIcon, Loader2 } from "lucide-react";
@@ -13,6 +13,8 @@ interface ImageUploadProps {
 }
 
 const ImageUpload = ({ value, onChange, bucket = "menu-images", folder = "items" }: ImageUploadProps) => {
+  const uniqueId = useId();
+  const inputId = `image-upload-${uniqueId}`;
   const [isUploading, setIsUploading] = useState(false);
   const [isDragging, setIsDragging] = useState(false);
 
@@ -116,7 +118,7 @@ const ImageUpload = ({ value, onChange, bucket = "menu-images", folder = "items"
               type="button"
               size="sm"
               variant="secondary"
-              onClick={() => document.getElementById("image-upload")?.click()}
+              onClick={() => document.getElementById(inputId)?.click()}
             >
               <Upload className="h-4 w-4 mr-1" />
               Replace
@@ -134,7 +136,7 @@ const ImageUpload = ({ value, onChange, bucket = "menu-images", folder = "items"
         </div>
       ) : (
         <div
-          onClick={() => !isUploading && document.getElementById("image-upload")?.click()}
+          onClick={() => !isUploading && document.getElementById(inputId)?.click()}
           onDrop={handleDrop}
           onDragOver={handleDragOver}
           onDragLeave={handleDragLeave}
@@ -166,7 +168,7 @@ const ImageUpload = ({ value, onChange, bucket = "menu-images", folder = "items"
       )}
 
       <input
-        id="image-upload"
+        id={inputId}
         type="file"
         accept="image/*"
         className="hidden"
