@@ -6,6 +6,7 @@ import Layout from "@/components/layout/Layout";
 import { useLanguage } from "@/contexts/LanguageContext";
 import { useCart } from "@/contexts/CartContext";
 import { supabase } from "@/integrations/supabase/client";
+import { useIsMobile } from "@/hooks/use-mobile";
 import { Badge } from "@/components/ui/badge";
 import { Input } from "@/components/ui/input";
 import { Button } from "@/components/ui/button";
@@ -63,6 +64,7 @@ const OrderOnline = () => {
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [filtersExpanded, setFiltersExpanded] = useState(false);
   const lastFetchedBranchSlugRef = useRef<string | null>(null);
+  const isMobile = useIsMobile();
 
   // URL params always win over persisted cart context values
   const urlTableParam = searchParams.get("table")?.trim() || null;
@@ -110,10 +112,14 @@ const OrderOnline = () => {
         setBranchId(null);
       }
 
-      // Fetch menu items and categories in parallel
+      // Fetch menu items and categories in parallel (select only required fields for mobile stability)
       const [itemsRes, categoriesRes] = await Promise.all([
-        supabase.from("menu_items").select("*").eq("is_available", true).order("sort_order"),
-        supabase.from("menu_categories").select("*").eq("is_active", true).order("sort_order"),
+        supabase
+          .from("menu_items")
+          .select("id,name,name_tr,description,description_tr,price,image_url,category_id,is_vegetarian,is_vegan,is_spicy,is_gluten_free,is_available")
+          .eq("is_available", true)
+          .order("sort_order"),
+        supabase.from("menu_categories").select("id,name,name_tr").eq("is_active", true).order("sort_order"),
       ]);
 
       if (categoriesRes.data) setCategories(categoriesRes.data);
@@ -137,26 +143,30 @@ const OrderOnline = () => {
     }
   };
 
+  const branchMenuItemMap = useMemo(() => {
+    return new Map(branchMenuItems.map((item) => [item.menu_item_id, item]));
+  }, [branchMenuItems]);
+
   // Filter items based on branch availability
   const availableItems = useMemo(() => {
-    if (!branch || branchMenuItems.length === 0) {
+    if (!branch || branchMenuItemMap.size === 0) {
       // No branch context - show all items
       return menuItems;
     }
 
     // Filter items based on branch_menu_items settings
     return menuItems.filter((item) => {
-      const branchItem = branchMenuItems.find((bi) => bi.menu_item_id === item.id);
+      const branchItem = branchMenuItemMap.get(item.id);
       // If no branch override exists, item is available by default
       // If override exists, check is_available flag
       return branchItem ? branchItem.is_available : true;
     });
-  }, [menuItems, branch, branchMenuItems]);
+  }, [menuItems, branch, branchMenuItemMap]);
 
   // Get effective price (with branch override if applicable)
   const getItemPrice = (item: MenuItem): number => {
-    if (branch && branchMenuItems.length > 0) {
-      const branchItem = branchMenuItems.find((bi) => bi.menu_item_id === item.id);
+    if (branch && branchMenuItemMap.size > 0) {
+      const branchItem = branchMenuItemMap.get(item.id);
       if (branchItem?.price_override != null) {
         return branchItem.price_override;
       }
@@ -399,16 +409,16 @@ const OrderOnline = () => {
                 return (
                   <motion.div
                     key={item.id}
-                    initial={{ opacity: 0, y: 20 }}
+                    initial={isMobile ? false : { opacity: 0, y: 20 }}
                     animate={{ opacity: 1, y: 0 }}
-                    transition={{ delay: Math.min(index * 0.03, 0.5) }}
+                    transition={{ delay: isMobile ? 0 : Math.min(index * 0.03, 0.5) }}
                     onClick={(e) => { e.stopPropagation(); handleItemClick(item); }}
                     className="group bg-card rounded-2xl overflow-hidden shadow-lg hover-lift cursor-pointer"
                   >
                     {/* Image */}
                     <div className="relative h-56 overflow-hidden">
                       <img
-                        src={optimizeImageUrl(item.image_url, 640)}
+                        src={optimizeImageUrl(item.image_url, isMobile ? 384 : 640)}
                         alt={language === "en" ? item.name : item.name_tr || item.name}
                         className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                         loading="lazy"
@@ -479,7 +489,7 @@ const OrderOnline = () => {
           description: selectedItem.description || undefined,
           descriptionTr: selectedItem.description_tr || undefined,
           price: getItemPrice(selectedItem),
-          image: optimizeImageUrl(selectedItem.image_url, 1024),
+          image: optimizeImageUrl(selectedItem.image_url, isMobile ? 640 : 1024),
           isVegetarian: selectedItem.is_vegetarian || undefined,
           isVegan: selectedItem.is_vegan || undefined,
           isSpicy: selectedItem.is_spicy || undefined,
