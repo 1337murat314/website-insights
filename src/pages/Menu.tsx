@@ -99,20 +99,8 @@ const Menu = () => {
     { id: "gluten-free", label: t("Gluten-Free", "Glutensiz"), icon: Wheat },
   ];
 
-  const optimizeImageUrl = (imageUrl: string | null | undefined, width = 640) => {
+  const optimizeImageUrl = (imageUrl: string | null | undefined) => {
     if (!imageUrl) return "/placeholder.svg";
-
-    if (imageUrl.includes("/storage/v1/object/public/")) {
-      try {
-        const url = new URL(imageUrl);
-        url.searchParams.set("width", String(width));
-        url.searchParams.set("quality", "75");
-        return url.toString();
-      } catch {
-        return imageUrl;
-      }
-    }
-
     return imageUrl;
   };
 
@@ -267,7 +255,7 @@ const Menu = () => {
                   {/* Image */}
                   <div className="relative h-56 overflow-hidden">
                     <img
-                      src={optimizeImageUrl(item.image_url, isMobile ? 384 : 640)}
+                      src={optimizeImageUrl(item.image_url)}
                       alt={language === "en" ? item.name : item.name_tr || item.name}
                       className="w-full h-full object-cover transition-transform duration-700 group-hover:scale-110"
                       loading="lazy"
@@ -343,7 +331,7 @@ const Menu = () => {
           description: selectedItem.description || undefined,
           descriptionTr: selectedItem.description_tr || undefined,
           price: selectedItem.price,
-          image: optimizeImageUrl(selectedItem.image_url, isMobile ? 640 : 1024),
+          image: optimizeImageUrl(selectedItem.image_url),
           isVegetarian: selectedItem.is_vegetarian || undefined,
           isVegan: selectedItem.is_vegan || undefined,
           isSpicy: selectedItem.is_spicy || undefined,
